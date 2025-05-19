@@ -1,5 +1,6 @@
 function [] = f00_DicomImport(SubjectId)
 
+scriptsDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);
 
 %% Setting the directory paths
@@ -30,4 +31,8 @@ spmBatch{1}.spm.util.import.dicom.convopts.icedims = 0;
 %% Call the jobman and return
 spm_jobman('initcfg');
 spm_jobman('run',spmBatch);
+
+%% CD back to scripts
+cd(scriptsDir);
+
 return
