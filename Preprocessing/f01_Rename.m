@@ -19,18 +19,36 @@ cd(['..',filesep,'..']);
 
 %% FMs
 cd('Fieldmap');
-cd(dir('FieldMap_AP_0*').name);
-renameFMs(subjectId,'AP');
-movefile('*.nii','..');
-cd('..');
-cd(dir('FieldMap_PA_0*').name);
-renameFMs(subjectId,'PA');
-movefile('*.nii','..');
-cd('..');
-mkdir('SBref+Json')
-cellfun(@(s) movefile(s,'SBref+Json'), {dir('FieldMap*').name}');
-cd('..');
-
+apList = {dir('FieldMap_AP_0*').name}';
+paList = {dir('FieldMap_PA_0*').name}';
+nFms = numel(apList);
+if nFms == 1
+    cd(dir('FieldMap_AP_0*').name);
+    renameFMs(subjectId,'AP');
+    movefile('*.nii','..');
+    cd('..');
+    cd(dir('FieldMap_PA_0*').name);
+    renameFMs(subjectId,'PA');
+    movefile('*.nii','..');
+    cd('..');
+    mkdir('SBref+Json')
+    cellfun(@(s) movefile(s,'SBref+Json'), {dir('FieldMap*').name}'); 
+    cd('..');
+elseif nFms > 1 && size(paList,1) == nFms
+    for ii = 1:nFms
+        cd(apList{ii,1});
+        renameFMs(subjectId,'AP');
+        movefile('*.nii','..');
+        cd('..');
+        cd(paList{ii,1});
+        renameFMs(subjectId,'PA');
+        movefile('*.nii','..');
+        cd('..');
+    end
+    mkdir('SBref+Json')
+    cellfun(@(s) movefile(s,'SBref+Json'), {dir('FieldMap*').name}');%THIS - only does one loop because moves evrythign else out
+    cd('..');
+end   
 %% Structural
 cd('Structural')
 renameT1(subjectId)
