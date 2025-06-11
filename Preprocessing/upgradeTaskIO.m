@@ -16,10 +16,13 @@ scanSpikes = getScanSpikes(spikeData);
 pulseSpikes = getPulseSpikes(spikeData);
 
 %% Produce a table of all heart beats
-[heartEvents] = getHeartEvents(pulseSpikes);
+heartEvents = getHeartEvents(pulseSpikes);
 
 %% Loop over runs
-scanDiagnostics = struct;
+sessData = repmat(...
+    struct('taskEvents',[],'TaskIO',[]),5,1);
+scanDiagnostics = repmat(...
+    struct('params',[],'scanSelect',[],'resids',[]),5,1);
 for iRun = 1:5
 
     % Load the TaskIO etc.
@@ -27,23 +30,23 @@ for iRun = 1:5
         sprintf('_R%i_',iRun)));
     runData = load(matFileNames(runSel).name);
 
-    % Create a hypothesised timeserise for expected taskSpikes (h)
+    % Create a hypothesised timeserise for expected taskSpikes (h).
     h = getExpetedTaskSpikes(taskSpikes,runData);
 
-    % Compute the dot d the timings of each scoll button pressproduct between h and taskSpikes at each sample
+    % Compute the dot product between h and taskSpikes at each sample.
     p = serialDot(taskSpikes.Data,h);
 
-    % Find sample indicies that approximate the start and end of this run 
+    % Find sample indicies that approximate the start and end of this run.
     [~,iRunStart] = max(p);
     iRunStart = iRunStart - 144;
     iRunEnd = iRunStart + numel(h) + 2*144;
 
-    % Produce a table of all task events (stimuli and button presses)
+    % Produce a table of all task events (stimuli and button presses).
     taskEvents = getTaskEvents(taskSpikes,runData,iRunStart,iRunEnd);
 
     % Get and filter the scan times from this run
     scanTimes = getScanTimes(scanSpikes,taskEvents,subjectId,iRun);
-    [scanTimes,scanIdx,scanDiagnostics(iRun,1)] = trimScanTimes(scanTimes);
+    [scanTimes,scanIdx,scanDiagnostics(iRun)] = trimScanTimes(scanTimes);
 
     % Use cubic interpolation to convert seconds into scanNum ...
     % ... for each task event.
@@ -55,20 +58,37 @@ for iRun = 1:5
         cubicInterp(taskEvents.t,heartEvents.t,heartEvents.n),...
         1).*2*pi;
 
-    % Extract and re-write TaskIO:
-    % 1) Replace all the timings with the scanNum metric computed above...
-    %    ... (including tArray);
-    % 2) Add the timings of each scoll button press;
-    % 3) Add response times;
-    % 4) Add the heart phases for each event;
-    % 5) Recode the responses;
+    % Develop TaskIO ...
+    % 1) Add all the event timings and heart phases in taskEvents;
+    % 2) Check for mismatches between Spike and PsychToolbox;
+    % 3) Recode behavioural responses and compute performance metrics;
+    TaskIO = developTaskIO(runData,taskEvents,subjectId,iRun);
+
+    % Populate sessData
+    taskEvents = [...
+        table(ones(size(taskEvents,1),1),'VariableNames',{'iRun'}),...
+        taskEvents]; %#ok<AGROW>
+    sessData(iRun).taskEvents = taskEvents;
+    sessData(iRun).TaskIO = TaskIO;
 
 end
 
-%% Save each new TaskIO structure into a new table...
-% ... with runs indexed by a specific variable
-
-% Also save scanDiagnostics;
+%% Save: TaskIO, taskEvents, scanDiagnostics, heartEvents
+TaskIO = [...
+    sessData(1).TaskIO;
+    sessData(2).TaskIO;
+    sessData(3).TaskIO;
+    sessData(4).TaskIO;
+    sessData(5).TaskIO;
+    ];
+taskEvents = [...
+    sessData(1).taskEvents;
+    sessData(2).taskEvents;
+    sessData(3).taskEvents;
+    sessData(4).taskEvents;
+    sessData(5).taskEvents;
+    ];
+save('TaskIO.mat',"TaskIO","taskEvents","scanDiagnostics","heartEvents");
 
 %% CD back
 cd(scriptsDir);
@@ -306,4 +326,209 @@ for ii = 1:numel(vx)
     p = polyfit(sz,sy,3);
     vy(ii) = polyval(p,vz);
 end
+return
+
+function [TaskIO] = developTaskIO(runData,taskEvents,subjectId,iRun)
+
+% Convert TaskIO into a table and pre-allocate new variables
+TaskIO = struct2table(runData.TaskIO);
+TaskIO.TrialType = categorical(TaskIO.TrialType);
+TaskIO.SubjectId = repmat(categorical({subjectId}),size(TaskIO,1),1);
+TaskIO.iRun = repmat(iRun,size(TaskIO,1),1);
+TaskIO.iTrial = cumsum(~strcmp(cellstr(TaskIO.TrialType),'Null'));
+TaskIO.iTrial(strcmp(cellstr(TaskIO.TrialType),'Null')) = NaN;
+TaskIO.a_pcm = nan(size(TaskIO,1),1);
+TaskIO.b_pcm = nan(size(TaskIO,1),1);
+TaskIO.tauShowA = nan(size(TaskIO,1),1);
+TaskIO.tauShowB = nan(size(TaskIO,1),1);
+TaskIO.tauArray = nan(size(TaskIO,1),1);
+TaskIO.tauScrol = cell(size(TaskIO,1),1);
+TaskIO.tauRespo = nan(size(TaskIO,1),1);
+TaskIO.phiShowA = nan(size(TaskIO,1),1);
+TaskIO.phiShowB = nan(size(TaskIO,1),1);
+TaskIO.phiScrol = cell(size(TaskIO,1),1);
+TaskIO.phiRespo = nan(size(TaskIO,1),1);
+TaskIO.phiKeyp1 = nan(size(TaskIO,1),1);
+TaskIO.terrA = nan(size(TaskIO,1),1);
+TaskIO.terrB = nan(size(TaskIO,1),1);
+TaskIO.terrR = nan(size(TaskIO,1),1);
+TaskIO.choice = nan(size(TaskIO,1),1);
+TaskIO.correct = nan(size(TaskIO,1),1);
+TaskIO.k1t = nan(size(TaskIO,1),1);
+TaskIO.rt = nan(size(TaskIO,1),1);
+
+%% Loop through taskEvents to populate TaskIO with new data
+iTrial = 0;
+for ii = 1:size(taskEvents,1)
+    eventId = taskEvents.EventId(ii);
+    if (eventId>=09)&&(eventId<=14)
+        % Show A
+        iTrial = iTrial + 1;
+        iRowIn = find(TaskIO.iTrial==iTrial);
+        TaskIO.a_pcm(iRowIn) = eventId-9;
+        TaskIO.tauShowA(iRowIn) = taskEvents.scanNum(ii);
+        TaskIO.phiShowA(iRowIn) = taskEvents.heartPhase(ii);
+        TaskIO.terrA(iRowIn) = ...
+            TaskIO.tauShowA(iRowIn) - ...
+            (TaskIO.tShowA(iRowIn)-runData.tScan0)/2.2;
+    elseif (eventId>=17)&&(eventId<=22)
+        % Show B
+        TaskIO.b_pcm(iRowIn) = eventId-17;
+        TaskIO.tauShowB(iRowIn) = taskEvents.scanNum(ii);
+        TaskIO.phiShowB(iRowIn) = taskEvents.heartPhase(ii);
+        TaskIO.terrB(iRowIn) = ...
+            TaskIO.tauShowB(iRowIn) - ...
+            (TaskIO.tShowB(iRowIn)-runData.tScan0)/2.2;
+    elseif eventId==1
+        % Scroll button
+        TaskIO.tauScrol{iRowIn} = [...
+            TaskIO.tauScrol{iRowIn};
+            taskEvents.scanNum(ii)];
+        TaskIO.phiScrol{iRowIn} = [...
+            TaskIO.phiScrol{iRowIn};
+            taskEvents.heartPhase(ii)];
+    elseif eventId==2
+        % Accept button
+        TaskIO.tauRespo(iRowIn) = taskEvents.scanNum(ii);
+        TaskIO.phiRespo(iRowIn) = taskEvents.heartPhase(ii);
+        TaskIO.terrR(iRowIn) = ...
+            TaskIO.tauRespo(iRowIn) - ...
+            (TaskIO.tRespo(iRowIn)-runData.tScan0)/2.2;
+    else
+        error([...
+            'Unrecognised spike event...%c',...
+            'Subject: %s;%c',...
+            'Run: %i;'],10,subjectId,10,iRun);
+    end
+end
+
+%% Check for stimulus decoding mismatches between Spike and PsychToolbox
+s = ~strcmp(TaskIO.TrialType,'Null');
+agree = [TaskIO.a(s),TaskIO.b(s)]==[TaskIO.a_pcm(s),TaskIO.b_pcm(s)];
+if sum(~agree,'all')==1
+    [trial,pos] = find(~agree);
+    pos = char(pos+64);
+    warning([...
+        'Minor stimulus decoding mismatch!%c',...
+        'Subject: %s;%c',...
+        'Run: %i;%c',...
+        'Trial: %02d;%c',...
+        'Position: %s;'],10,subjectId,10,iRun,10,trial,10,pos);
+    disp('');
+elseif sum(~agree,'all')>1
+    disp(~agree);
+    error([...
+        'Major stimulus decoding mismatch!%c',...
+        'Subject: %s;%c',...
+        'Run: %i;'],10,subjectId,10,iRun);
+end
+
+%% Check event timing mismatches recorded in Spike and PsychToolbox
+tErr = [TaskIO.terrA;TaskIO.terrB;TaskIO.terrR];
+tErr = tErr(~isnan(tErr));
+pass = abs(tErr)<0.05;
+if any(~pass,'all')
+    error([...
+        'Large mismatch in Spike vs PsychToolbox timeings for...%c',...
+        'Subject: %s;%c',...
+        'Run: %i;'],10,subjectId,10,iRun);
+end
+
+%% Compute tauArray via cubic interpolation
+x = [TaskIO.tShowA,TaskIO.tShowB,TaskIO.tRespo];
+y = [TaskIO.tauShowA,TaskIO.tauShowB,TaskIO.tauRespo];
+s = ~isnan(x);
+x = x(s);
+y = y(s);
+q = TaskIO.tArray;
+r = cubicInterp(q,x,y);
+TaskIO.tauArray = r;
+
+%% Add phiKeyp1
+for ii = 1:size(TaskIO,1)
+    phi = [TaskIO.phiScrol{ii};TaskIO.phiRespo(ii)];
+    if ~isempty(phi)
+        TaskIO.phiKeyp1(ii) = phi(1);
+    end
+end
+
+%% Extract activly selected responses (choice)
+choice = mod(abs(TaskIO.r)-1,6);
+choice(imag(TaskIO.r)~=0) = NaN;
+TaskIO.choice = choice;
+
+%% Determin wether each choice is correct
+correct = double(mod(TaskIO.a+TaskIO.b,6) == TaskIO.choice);
+correct(isnan(choice)) = NaN;
+TaskIO.correct = correct;
+bool1 = TaskIO.TrialType==categorical({'1Back'});
+TaskIO.correct(bool1) = TaskIO.choice(bool1)==TaskIO.b(bool1);
+bool2 = TaskIO.TrialType==categorical({'2Back'});
+TaskIO.correct(bool2) = TaskIO.choice(bool2)==TaskIO.a(bool2);
+if ~all(TaskIO.correct(bool1|bool2))
+    test = nan(size(bool1));
+    test(bool1) = TaskIO.choice(bool1)==TaskIO.a(bool1);
+    test(bool2) = TaskIO.choice(bool2)==TaskIO.b(bool2);
+    if all(test(bool1|bool2))
+        warning([...
+            'It looks like %s has mistaken 1Back and 2Back stimuli ',...
+            'during run %i;%cRecoding responses.'],subjectId,iRun,10);
+        disp('');
+        TaskIO.choice(bool1) = TaskIO.b(bool1);
+        TaskIO.choice(bool2) = TaskIO.a(bool2);
+        TaskIO.correct(bool1|bool2) = true;
+    end
+end
+
+%% Add first key time (k1t) and response time (rt)
+for ii = 1:size(TaskIO,1)
+    kt = [TaskIO.tauScrol{ii};TaskIO.tauRespo(ii)];
+    if ~isempty(kt)
+        TaskIO.k1t(ii) = (kt(1)-TaskIO.tauArray(ii))*2.2;
+    end
+end
+TaskIO.rt = TaskIO.tRespo-TaskIO.tArray;
+
+%% Clearn up
+TaskIO.tShowA = [];
+TaskIO.tShowB = [];
+TaskIO.tArray = [];
+TaskIO.tRespo = [];
+TaskIO.a_pcm = [];
+TaskIO.b_pcm = [];
+TaskIO.phiShowA = [];
+TaskIO.phiShowB = [];
+TaskIO.terrA = [];
+TaskIO.terrB = [];
+TaskIO.terrR = [];
+
+%% Reorder variables
+targetVarOrder = {...
+    'SubjectId'
+    'iRun'
+    'iTrial'
+    'TrialType'
+    'PairId'
+    'isiLength'
+    'arrayPerm'
+    'startPos'
+    'a'
+    'b'
+    'r'
+    'choice'
+    'correct'
+    'k1t'
+    'rt'
+    'tauShowA'
+    'tauShowB'
+    'tauArray'
+    'tauScrol'
+    'tauRespo'
+    'phiScrol'
+    'phiRespo'
+    'phiKeyp1'};
+sortV = cellfun(...
+    @(s)find(strcmp(s,TaskIO.Properties.VariableNames')),...
+    targetVarOrder);
+TaskIO = TaskIO(:,sortV);
 return
