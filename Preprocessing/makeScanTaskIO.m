@@ -1,4 +1,4 @@
-function [] = upgradeTaskIO(subjectId)
+function [] = makeScanTaskIO(subjectId)
 
 scriptsDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);
@@ -23,6 +23,7 @@ sessData = repmat(...
     struct('taskEvents',[],'TaskIO',[]),5,1);
 scanDiagnostics = repmat(...
     struct('params',[],'scanSelect',[],'resids',[]),5,1);
+logFilId = fopen('makeLog_ScanTaskIO.txt','w');
 for iRun = 1:5
 
     % Load the TaskIO etc.
@@ -45,7 +46,16 @@ for iRun = 1:5
     taskEvents = getTaskEvents(taskSpikes,runData,iRunStart,iRunEnd);
 
     % Get and filter the scan times from this run
-    scanTimes = getScanTimes(scanSpikes,taskEvents,subjectId,iRun);
+    try
+        scanTimes = getScanTimes(scanSpikes,taskEvents,subjectId,iRun);
+    catch ME1
+        errTxt = ME1.message;
+        fprintf(logFilId,errTxt);
+        fclose(logFilId);
+        save('ScanTaskIO.mat', ...
+            "taskEvents","sessData","scanDiagnostics","heartEvents");
+        return
+    end
     [scanTimes,scanIdx,scanDiagnostics(iRun)] = trimScanTimes(scanTimes);
 
     % Use cubic interpolation to convert seconds into scanNum ...
@@ -62,7 +72,16 @@ for iRun = 1:5
     % 1) Add all the event timings and heart phases in taskEvents;
     % 2) Check for mismatches between Spike and PsychToolbox;
     % 3) Recode behavioural responses and compute performance metrics;
-    TaskIO = developTaskIO(runData,taskEvents,subjectId,iRun);
+    try
+        TaskIO = developTaskIO(runData,taskEvents,subjectId,iRun,logFilId);
+    catch ME2
+        errTxt = ME2.message;
+        fprintf(logFilId,errTxt);
+        fclose(logFilId);
+        save('ScanTaskIO.mat', ...
+            "taskEvents","sessData","scanDiagnostics","heartEvents");
+        return
+    end
 
     % Populate sessData
     taskEvents = [...
@@ -88,7 +107,9 @@ taskEvents = [...
     sessData(4).taskEvents;
     sessData(5).taskEvents;
     ];
-save('TaskIO.mat',"TaskIO","taskEvents","scanDiagnostics","heartEvents");
+save('ScanTaskIO.mat',...
+    "TaskIO","taskEvents","scanDiagnostics","heartEvents");
+fclose(logFilId);
 
 %% CD back
 cd(scriptsDir);
@@ -328,7 +349,7 @@ for ii = 1:numel(vx)
 end
 return
 
-function [TaskIO] = developTaskIO(runData,taskEvents,subjectId,iRun)
+function [TaskIO] = developTaskIO(runData,taskEvents,subjectId,iRun,logFilId)
 
 % Convert TaskIO into a table and pre-allocate new variables
 TaskIO = struct2table(runData.TaskIO);
@@ -408,12 +429,14 @@ agree = [TaskIO.a(s),TaskIO.b(s)]==[TaskIO.a_pcm(s),TaskIO.b_pcm(s)];
 if sum(~agree,'all')==1
     [trial,pos] = find(~agree);
     pos = char(pos+64);
-    warning([...
+    warnTxt = sprintf([...
         'Minor stimulus decoding mismatch!%c',...
         'Subject: %s;%c',...
         'Run: %i;%c',...
         'Trial: %02d;%c',...
-        'Position: %s;'],10,subjectId,10,iRun,10,trial,10,pos);
+        'Position: %s;%c'],10,subjectId,10,iRun,10,trial,10,pos,10);
+    fprintf(logFilId,warnTxt);
+    warning(warnTxt); %#ok<SPWRN>
     disp('');
 elseif sum(~agree,'all')>1
     disp(~agree);
@@ -470,9 +493,11 @@ if ~all(TaskIO.correct(bool1|bool2))
     test(bool1) = TaskIO.choice(bool1)==TaskIO.a(bool1);
     test(bool2) = TaskIO.choice(bool2)==TaskIO.b(bool2);
     if all(test(bool1|bool2))
-        warning([...
+        warnTxt = sprintf([...
             'It looks like %s has mistaken 1Back and 2Back stimuli ',...
             'during run %i;%cRecoding responses.'],subjectId,iRun,10);
+        fprintf(logFilId,warnTxt);
+        warning(warnTxt); %#ok<SPWRN>
         disp('');
         TaskIO.choice(bool1) = TaskIO.b(bool1);
         TaskIO.choice(bool2) = TaskIO.a(bool2);
