@@ -158,6 +158,7 @@ function [heartEvents] = getHeartEvents(pulseSpikes)
 state = double(pulseSpikes.Data(1) > 1);
 if state == 1
     count = 1;
+    iStartEvn = 1;
 end
 c = pulseSpikes.TimeInfo.Increment;
 jj = 0; % Index of each event
