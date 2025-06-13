@@ -4,6 +4,9 @@ scriptsDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);
 % Cd into subject dir
 cd([subjectId,filesep,'Behavioural']);
+if exist('makeLog_ScanTaskIO.txt','file')
+    return
+end
 
 %% Read in data, extract:
 % taskSpikes: A timeseries object that records IOport pulses.
@@ -51,9 +54,9 @@ for iRun = 1:5
     catch ME1
         errTxt = ME1.message;
         fprintf(logFilId,errTxt);
+        fprintf(logFilId,char([10,10]));
         fclose(logFilId);
-        save('ScanTaskIO.mat', ...
-            "taskEvents","sessData","scanDiagnostics","heartEvents");
+        save('Failed_ScanTaskIO.mat');
         return
     end
     [scanTimes,scanIdx,scanDiagnostics(iRun)] = trimScanTimes(scanTimes);
@@ -77,9 +80,9 @@ for iRun = 1:5
     catch ME2
         errTxt = ME2.message;
         fprintf(logFilId,errTxt);
+        fprintf(logFilId,char([10,10]));
         fclose(logFilId);
-        save('ScanTaskIO.mat', ...
-            "taskEvents","sessData","scanDiagnostics","heartEvents");
+        save('Failed_ScanTaskIO.mat');
         return
     end
 
@@ -380,20 +383,24 @@ TaskIO.k1t = nan(size(TaskIO,1),1);
 TaskIO.rt = nan(size(TaskIO,1),1);
 
 %% Loop through taskEvents to populate TaskIO with new data
-iTrial = 0;
+stimCounter = 0;
 for ii = 1:size(taskEvents,1)
     eventId = taskEvents.EventId(ii);
-    if (eventId>=09)&&(eventId<=14)
-        % Show A
-        iTrial = iTrial + 1;
+    if eventId>6
+        stimCounter = stimCounter + 1;
+        iTrial = floor((stimCounter-1)/2)+1;
+        iAB = mod((stimCounter-1),2)+1;
         iRowIn = find(TaskIO.iTrial==iTrial);
+    end
+    if (eventId>6) && (iAB==1)
+        % Show A
         TaskIO.a_pcm(iRowIn) = eventId-9;
         TaskIO.tauShowA(iRowIn) = taskEvents.scanNum(ii);
         TaskIO.phiShowA(iRowIn) = taskEvents.heartPhase(ii);
         TaskIO.terrA(iRowIn) = ...
             TaskIO.tauShowA(iRowIn) - ...
             (TaskIO.tShowA(iRowIn)-runData.tScan0)/2.2;
-    elseif (eventId>=17)&&(eventId<=22)
+    elseif (eventId>6) && (iAB==2)
         % Show B
         TaskIO.b_pcm(iRowIn) = eventId-17;
         TaskIO.tauShowB(iRowIn) = taskEvents.scanNum(ii);
@@ -416,11 +423,6 @@ for ii = 1:size(taskEvents,1)
         TaskIO.terrR(iRowIn) = ...
             TaskIO.tauRespo(iRowIn) - ...
             (TaskIO.tRespo(iRowIn)-runData.tScan0)/2.2;
-    else
-        error([...
-            'Unrecognised spike event...%c',...
-            'Subject: %s;%c',...
-            'Run: %i;'],10,subjectId,10,iRun);
     end
 end
 
@@ -435,7 +437,7 @@ if sum(~agree,'all')==1
         'Subject: %s;%c',...
         'Run: %i;%c',...
         'Trial: %02d;%c',...
-        'Position: %s;%c'],10,subjectId,10,iRun,10,trial,10,pos,10);
+        'Position: %s;%c%c'],10,subjectId,10,iRun,10,trial,10,pos,10,10);
     fprintf(logFilId,warnTxt);
     warning(warnTxt); %#ok<SPWRN>
     disp('');
@@ -496,7 +498,8 @@ if ~all(TaskIO.correct(bool1|bool2))
     if all(test(bool1|bool2))
         warnTxt = sprintf([...
             'It looks like %s has mistaken 1Back and 2Back stimuli ',...
-            'during run %i;%cRecoding responses.'],subjectId,iRun,10);
+            'during run %i;%cRecoding responses.%c%c'],...
+            subjectId,iRun,10,10,10);
         fprintf(logFilId,warnTxt);
         warning(warnTxt); %#ok<SPWRN>
         disp('');
