@@ -6,7 +6,8 @@ if nargin == 0
 elseif nargin == 1
     dirLits = dir('../../Data');
     subjectIds = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
-elseif nargin < 3
+    numWorkers = 1;
+elseif nargin == 2
     numWorkers = 1;
 elseif nargin > 3
     error('Too many input arguments.');
