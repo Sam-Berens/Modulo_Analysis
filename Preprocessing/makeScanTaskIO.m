@@ -5,6 +5,7 @@ cd(['..',filesep,'..',filesep,'Data']);
 % Cd into subject dir
 cd([subjectId,filesep,'Behavioural']);
 if exist('makeLog_ScanTaskIO.txt','file')
+    cd(scriptsDir);
     return
 end
 
