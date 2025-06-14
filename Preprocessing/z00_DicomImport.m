@@ -1,4 +1,4 @@
-function [] = f00_DicomImport(SubjectId)
+function [] = z00_DicomImport(SubjectId)
 
 scriptsDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);

@@ -1,4 +1,4 @@
-function [] = f01_Rename(subjectId)
+function [] = z01_Rename(subjectId)
 
 scriptsDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);
