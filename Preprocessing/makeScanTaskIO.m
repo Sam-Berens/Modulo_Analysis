@@ -58,6 +58,7 @@ for iRun = 1:5
         fprintf(logFilId,char([10,10]));
         fclose(logFilId);
         save('Failed_ScanTaskIO.mat');
+        cd(scriptsDir);
         return
     end
     [scanTimes,scanIdx,scanDiagnostics(iRun)] = trimScanTimes(scanTimes);
@@ -84,6 +85,7 @@ for iRun = 1:5
         fprintf(logFilId,char([10,10]));
         fclose(logFilId);
         save('Failed_ScanTaskIO.mat');
+        cd(scriptsDir);
         return
     end
 
@@ -280,7 +282,7 @@ for ii = 1:numel(tStart)
     end
 end
 if isnan(iScanSeq)
-    error('Unable to find a scan sequence for run %i and subject %s.',...
+    error('Unable to find a scan sequence for run %i, subject %s;',...
         iRun,subjectId);
 end
 scanTimes = scanSpikes(iStart(iScanSeq):iEnd(iScanSeq));
