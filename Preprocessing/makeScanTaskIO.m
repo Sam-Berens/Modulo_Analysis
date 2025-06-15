@@ -196,8 +196,12 @@ heartEvents.n = (0:(N-1))';
 return
 
 function [h] = getExpetedTaskSpikes(taskSpikes,runData)
-tS = runData.TaskIO(1).tShowA;
-tE = runData.TaskIO(end).tRespo;
+tM = [...
+    [runData.TaskIO.tShowA]',...
+    [runData.TaskIO.tShowA]',...
+    [runData.TaskIO.tRespo]'];
+tS = min(tM,[],'all','omitnan');
+tE = max(tM,[],'all','omitnan');
 dur = tE - tS;
 nSamps = ceil(dur / taskSpikes.TimeInfo.Increment);
 h = zeros(nSamps,1);
