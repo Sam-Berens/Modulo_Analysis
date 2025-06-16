@@ -237,14 +237,22 @@ end
 return
 
 function [p] = serialDot(v,k)
+dv = diff(v);
+idxUp = find(dv>1);
 v = v./norm(v);
 k = k./norm(k);
 m = numel(k);
-n = numel(v)-m+1;
-p = zeros(n,1);
-parfor ii = 1:n
-    s = v(ii:(ii+m-1)); %#ok<PFBNS>
-    p(ii) = s'*k;
+p = zeros(size(v));
+for iUp = 1:numel(idxUp)
+    idxStarts = ((idxUp(iUp)-144):(idxUp(iUp)+144))';
+    for iStart = 1:numel(idxStarts)
+        is = idxStarts(iStart);
+        ie = is+m-1;
+        if numel(v) >= ie
+            cv = v(is:ie);
+            p(is) = cv'*k;
+        end
+    end
 end
 return
 
@@ -281,7 +289,10 @@ tStart = scanSpikes(iStart);
 tEnd = scanSpikes(iEnd);
 iScanSeq = NaN;
 for ii = 1:numel(tStart)
-    if (taskEvents.t(1)>tStart(ii)) && (taskEvents.t(end)<tEnd(ii))
+    if (taskEvents.t(1)>tStart(ii)) && ...
+            (max(taskEvents.t(taskEvents.EventId>6))<tEnd(ii))
+        % This enforces that the last stimulus must have been presented
+        % before the start of the last scan
         iScanSeq = ii;
     end
 end
