@@ -36,7 +36,7 @@ for iRun = 1:5
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).scans = ...
     FilePath_EPIs{iRun};
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).pmscan = ...
-        FilePath_VDMs{iRun};
+        FilePath_VDMs(iRun);
 end
 
 SpmBatch{1}.spm.spatial.realignunwarp.eoptions.quality = 1;

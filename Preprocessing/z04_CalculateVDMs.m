@@ -26,7 +26,6 @@ if sum(double(size(FileList) == [1,1]),2) ~= 2
 end
 FilePath_FmMag= sprintf('%s%s%s',pwd,filesep,FileList.name);
 
-
 cd ..;
 
 %% Cd into the EPI/0_Raw folder
@@ -45,7 +44,7 @@ for iRun = 1:5
     FilePath_EPIs{iRun} = [dirList.folder, filesep, dirList.name];
 end
 
-%% Create and execute batch
+%% Create and execute the SPM batch
 
 % Select the off-resonance image (in Hz)
 SpmBatch{1}.spm.tools.fieldmap.calculatevdm.subj.data.precalcfieldmap...
