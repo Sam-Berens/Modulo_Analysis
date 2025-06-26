@@ -3,9 +3,26 @@ function [] = z03_MakeFmMag(subjectId)
 preprocDir = pwd;
 cd(['..',filesep,'..',filesep,'Data']);
 cd(subjectId);
-cd('Fieldmap');
 
-%% Load the raw fieldmap images
+if exist('Fieldmap','file')
+    cd('Fieldmap');
+    specAndRun(subjectId);
+else
+    cd('Fieldmap1');
+    specAndRun(subjectId);
+    cd ..;
+    cd('Fieldmap2');
+    specAndRun(subjectId);
+end
+
+%% Cd out of subject and then out of data
+cd(preprocDir);
+
+return
+
+function [] = specAndRun(subjectId)
+
+% Load the raw fieldmap images
 fileList = [dir('_*_FmAP-*.nii');dir('_*_FmPA-*.nii')];
 filenames = {fileList.name}';
 V = spm_vol(filenames);
@@ -39,8 +56,5 @@ SpmBatch{1}.spm.util.imcalc.options.dtype = 512;
 
 spm_jobman('initcfg');
 spm_jobman('run',SpmBatch);
-
-%% Cd out of subject and then out of data
-cd(preprocDir);
 
 return
