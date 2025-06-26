@@ -28,7 +28,7 @@ end
 %% Set-up and run the SPM batch
 SpmBatch{1}.spm.util.imcalc.input = cellfun(@(s)s.fname,newV,...
     'UniformOutput',false);
-matlabbatch{1}.spm.util.imcalc.output = sprintf('_%s_FmMag.nii',subjectId);
+SpmBatch{1}.spm.util.imcalc.output = sprintf('_%s_FmMag.nii',subjectId);
 SpmBatch{1}.spm.util.imcalc.outdir = {''};
 SpmBatch{1}.spm.util.imcalc.expression = '(i1+i2+i3+i4+i5+i6+i7+i8)/8';
 SpmBatch{1}.spm.util.imcalc.var = struct('name', {}, 'value', {});
