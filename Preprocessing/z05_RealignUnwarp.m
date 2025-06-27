@@ -1,29 +1,26 @@
 function [] = z05_RealignUnwarp(subjectId)
 
-preprocDir = pwd;
-cd(['..',filesep,'..',filesep,'Data']);
-cd(subjectId);
+dataDir = dir(['..',filesep,'..',filesep,'Data']);
+dataDir = dataDir(1).folder;
+subjDir = [dataDir,filesep,subjectId];
 
 %% Get FilePath_VDMs
-cd Fieldmap;
+fmDir = [subjDir,filesep,'Fieldmap'];
 
 % Get filepaths for first volume of each functional run
 FilePath_VDMs = cell(5,1);
 for iRun = 1:5
-    dirList = dir(sprintf('vdm5__*_FmROI_R%i.nii',iRun));
+    dirList = dir(sprintf('%s%svdm5__*_FmORI_R%i.nii',fmDir,filesep,iRun));
     FilePath_VDMs{iRun} = [dirList.folder, filesep, dirList.name];
 end
 
-cd ..;
-
 %% Get the file paths for the EPI data
-cd EPI/0_Raw;
+epiRawDir = [subjDir,filesep,'EPI/0_Raw'];
 
 FilePath_EPIs = cell(5,1);
 for iRun = 1:5
-    cd(['R',int2str(iRun)]);
-    dirList = dir('_*.nii');
-    cd ..;
+    sourceDir = [epiRawDir,filesep,'R',int2str(iRun)];
+    dirList = dir(sprintf('%s%s_*.nii',sourceDir,filesep));
     FilePath_EPIs{iRun} = cellfun(...
         @(x,y)[x,filesep,y],...
         {dirList.folder}',...
@@ -34,7 +31,7 @@ end
 %% Create and execute the SPM batch
 for iRun = 1:5
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).scans = ...
-    FilePath_EPIs{iRun};
+        FilePath_EPIs{iRun};
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).pmscan = ...
         FilePath_VDMs(iRun);
 end
@@ -67,15 +64,19 @@ spm_jobman('run',SpmBatch);
 
 %% Move new files
 for iRun = 1:5
-    cd(['R',int2str(iRun)]);
-    mkdir(['../../1_Realigned/R',int2str(iRun)]);
+    sourceDir = [epiRawDir,filesep,'R',int2str(iRun)];
+    targetDir = [subjDir,'/EPI/1_Realigned/R',int2str(iRun)];
+    mkdir(targetDir);
     movefile(...
-        'u_*.nii',...
-        ['../../1_Realigned/R',int2str(iRun),filesep]);
-    cd ..;
+        [sourceDir,'/u_*.nii'],...
+        targetDir);
+    movefile(...
+        [sourceDir,'/_*_uw.mat'],...
+        targetDir);
+    movefile([sourceDir,'/rp__*.txt'],[subjDir,'/EPI']);
+    if iRun == 1
+        movefile([sourceDir,'/meanu_*.nii'],[subjDir,'/EPI']);
+    end
 end
-
-%% Cd out of subject and then out of data
-cd(preprocDir);
 
 return
