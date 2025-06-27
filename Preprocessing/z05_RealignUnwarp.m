@@ -6,20 +6,20 @@ subjDir = [dataDir,filesep,subjectId];
 
 %% Get FilePath_VDMs
 fmDir = [subjDir,filesep,'Fieldmap'];
-
-% Get filepaths for first volume of each functional run
-FilePath_VDMs = cell(5,1);
-for iRun = 1:5
-    dirList = dir(sprintf('%s%svdm5__*_FmORI_R%i.nii',fmDir,filesep,iRun));
-    FilePath_VDMs{iRun} = [dirList.folder, filesep, dirList.name];
-end
+fmDirList = dir([fmDir,filesep,'vdm5__*_FmORI_R*.nii']);
+runNames = cellfun(...
+    @(s)s((end-5):(end-4)),{fmDirList.name}','UniformOutput',false);
+nRuns = numel(runNames);
+FilePath_VDMs = cellfun(...
+    @(s1,s2)[s1,filesep,s2],...
+    {fmDirList.folder}',{fmDirList.name}',...
+    'UniformOutput',false);
 
 %% Get the file paths for the EPI data
-epiRawDir = [subjDir,filesep,'EPI/0_Raw'];
-
-FilePath_EPIs = cell(5,1);
-for iRun = 1:5
-    sourceDir = [epiRawDir,filesep,'R',int2str(iRun)];
+epiRawDir = [subjDir,filesep,'EPI',filesep,'0_Raw'];
+FilePath_EPIs = cell(nRuns,1);
+for iRun = 1:nRuns
+    sourceDir = [epiRawDir,filesep,runNames{iRun}];
     dirList = dir(sprintf('%s%s_*.nii',sourceDir,filesep));
     FilePath_EPIs{iRun} = cellfun(...
         @(x,y)[x,filesep,y],...
@@ -29,7 +29,7 @@ for iRun = 1:5
 end
 
 %% Create and execute the SPM batch
-for iRun = 1:5
+for iRun = 1:nRuns
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).scans = ...
         FilePath_EPIs{iRun};
     SpmBatch{1}.spm.spatial.realignunwarp.data(iRun).pmscan = ...
@@ -63,9 +63,9 @@ spm_jobman('initcfg');
 spm_jobman('run',SpmBatch);
 
 %% Move new files
-for iRun = 1:5
-    sourceDir = [epiRawDir,filesep,'R',int2str(iRun)];
-    targetDir = [subjDir,'/EPI/1_Realigned/R',int2str(iRun)];
+for iRun = 1:nRuns
+    sourceDir = [epiRawDir,filesep,runNames{iRun}];
+    targetDir = [subjDir,'/EPI/1_Realigned/',runNames{iRun}];
     mkdir(targetDir);
     movefile(...
         [sourceDir,'/u_*.nii'],...
