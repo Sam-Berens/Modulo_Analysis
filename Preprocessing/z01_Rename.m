@@ -46,7 +46,7 @@ elseif nFms > 1 && size(paList,1) == nFms
         cd('..');
     end
     mkdir('SBref+Json')
-    cellfun(@(s) movefile(s,'SBref+Json'), {dir('FieldMap*').name}');%THIS - only does one loop because moves evrythign else out
+    cellfun(@(s) movefile(s,'SBref+Json'), {dir('FieldMap*').name}');
     cd('..');
 end   
 %% Structural
@@ -54,6 +54,7 @@ cd('Structural')
 renameT1(subjectId)
 mkdir Json;
 movefile('*.json','Json');
+movefile('*.mat','Json');
 cd('..');
 
 %% Cd out of subject dir
