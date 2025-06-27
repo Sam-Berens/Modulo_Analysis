@@ -24,6 +24,10 @@ if numWorkers > 8
         return
     end
 end
+if isempty(subjectIds)
+    dirLits = dir('../../Data');
+    subjectIds = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
+end
 
 %% Apply the function
 if numWorkers==1
