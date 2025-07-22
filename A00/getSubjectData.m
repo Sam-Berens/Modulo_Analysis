@@ -19,14 +19,12 @@ function [TaskIO] = getSubjectData(SubjectId)
 % Outputs:
 %    Data - A table containing the processed subject data with the
 %           following variables:
-%               SubjectId, AttemptIds, SessionId, TrialId, tSup, PairId,
-%               PairType, TrialType, FieldIdx_A, FieldIdx_B, FieldIdx_C,
-%               FieldIdx_R, and RT.
+%               SubjectId, SessionId, TrialId, tSup, PairId, PairType, 
+%               TrialType, FieldIdx_A, FieldIdx_B, FieldIdx_C, FieldIdx_R,
+%               and RT.
 %
 % Example:
 %    Data = getSubjectData('subject123');
-%
-% See also: estimate_spth01
 %
 
 %% Check to see whether data has been saved locally
@@ -45,7 +43,6 @@ TaskIO = webwrite(...
     'https://b01.learningandinference.org/GetTaskIO.php',...
     'SubjectId',SubjectId);
 TaskIO = struct2table(TaskIO);
-TaskIO.AttemptId = categorical(TaskIO.AttemptId);
 TaskIO.SubjectId = categorical(TaskIO.SubjectId);
 TaskIO.FieldSize = [];
 TaskIO.SessionId = str2double(TaskIO.SessionId);
@@ -81,6 +78,18 @@ PairTypes = categorical(fieldnames(TypeIdxs));
 TaskIO = sortrows(TaskIO,...
     {'DateTime_Write','AttemptNum'},{'ascend','ascend'});
 
+%% Check for post-scan entries
+[bool] = checkForPostScanEvents(pathToTaskIO,TaskIO.DateTime_Write);
+if any(bool)
+    if contains(SubjectId,...
+            {'3d00293e';'b777a363';'b8282457';'d0d844d6';'eec99b44'})
+        % This is the list of people who did extra training
+        TaskIO = TaskIO(~bool,:);
+    else
+        error('You should probably be aware of this: %s',SubjectId);
+    end
+end
+
 %% Construct trial-unique IDs for each trial
 M = [TaskIO.SessionId,TaskIO.TrialId];
 uM = unique(M,'rows');
@@ -94,7 +103,6 @@ PairCounts = zeros(6);
 for iTrial = 1:max(TaskIO.TrialId)
     T = TaskIO(TaskIO.TrialId==iTrial,:);
     Data.SubjectId(iTrial,1) = T.SubjectId(1);
-    Data.AttemptIds(iTrial,1) = {T.AttemptId};
     Data.SessionId(iTrial,1) = T.SessionId(1);
     Data.TrialId(iTrial,1) = iTrial - 1;
     Data.tSup(iTrial,1) = mean(PairCounts(SupervIdx+1));
@@ -114,6 +122,15 @@ end
 
 %% Redefine TaskIO and save the data locally
 TaskIO = struct2table(Data);
-save([pathToTaskIO,filesep,'TrainTaskIO.mat'],'TaskIO','-v7.3');
+save([pathToTaskIO,filesep,'TrainTaskIO.mat'],'TaskIO');
 
+return
+
+function [bool] = checkForPostScanEvents(pathToTaskIO,trainTimes)
+fileList = dir([pathToTaskIO,filesep,'*_R*.mat']);
+fn = fileList(end).name;
+iS = strfind(fn,'_202')+1;
+iE = iS + 14;
+scanTime = datetime(fn(iS:iE));
+bool = trainTimes > scanTime;
 return
