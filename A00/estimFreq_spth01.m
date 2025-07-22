@@ -46,7 +46,6 @@ elseif ~dispPlot
     fh = nan;
 end
 Data = getSubjectData(SubjectId);
-Data.AttemptIds = [];
 
 %% Add empty variables to Data that will store outcomes and predicted PMFs
 Data.Y = nan(size(Data,1),6);
