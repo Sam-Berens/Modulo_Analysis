@@ -72,7 +72,8 @@ k(k<-700) = -700;
 return
 
 function [pdf] = vmpdf(theta,mu,k)
-% vmpdf computes the von Mises probability density function.
+% vmpdf computes the (unnormalised) von Mises PDF.
+% ... unnormalised, as it is normed into a valid PMF above.
 %
 % Inputs:
 %    theta - Vector of angle values (in radians).
@@ -83,10 +84,7 @@ function [pdf] = vmpdf(theta,mu,k)
 %    pdf   - Vector of probability density values computed at each angle in
 %            theta.
 %
-% The pdf is normalized by the factor c, which involves the zeroth-order
-% Bessel function.
-%
 
-c = 1./(2.*pi.*besseli(0,k));
-pdf = c .* exp(k.*cos(theta-mu));
+% c = 1./(2.*pi.*besseli(0,k));
+pdf = exp(k.*cos(theta-mu));
 return
