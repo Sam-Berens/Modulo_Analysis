@@ -12,7 +12,7 @@ function [nll] = spvm_nll(b,x,c,Y)
 %    responses (field indices).
 %
 % Inputs:
-%    b   - A m-by-2 matrix of m model parameters to be evaluated.
+%    b   - A 2-by-m matrix of m model parameters to be evaluated.
 %    x   - Vector of predictor values.
 %    c   - Vector of target (correct) responses (as field indices).
 %    Y   - Matrix of observed responses (field indices) for each trial.
