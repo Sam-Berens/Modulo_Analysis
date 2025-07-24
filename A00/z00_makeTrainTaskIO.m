@@ -5,7 +5,7 @@ subjectIds = categorical(subjectIds);
 fh = waitbar(0,'Saving data...');
 for iSubject = 1:numel(subjectIds)
     sId = subjectIds(iSubject);
-    [~] = getSubjectData(char(sId));
+    [~] = getTrainTaskIO(char(sId));
     waitbar(iSubject/numel(subjectIds),fh);
 end
 close(fh);

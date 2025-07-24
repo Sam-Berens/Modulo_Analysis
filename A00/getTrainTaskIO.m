@@ -1,16 +1,16 @@
-function [TaskIO] = getSubjectData(SubjectId)
-% getSubjectData.m
+function [TaskIO] = getTrainTaskIO(SubjectId)
+% getTrainTaskIO.m
 % Sam Berens (s.berens@sussex.ac.uk)
-% 24/03/2025
+% 24/07/2025
 %
-% Syntax:  Data = getSubjectData(SubjectId)
+% Syntax:  Data = getTrainTaskIO(SubjectId)
 %
 % Description:
-%    Retrieves and processes subject-specific task data from a web server.
-%    The function downloads TaskIO data, converts the structure to a table,
-%    assigns proper data types to each field, and organizes trials based on
-%    predefined pair type indices. It also creates unique trial
-%    identifiers.
+%    Retrieves and processes subject-specific task data from a web server
+%    (or local file if avaible). The function downloads TaskIO data,
+%    converts the structure to a table, assigns proper data types to each
+%    field, and organizes trials based on predefined pair type indices. It
+%    also creates unique trial identifiers.
 %
 % Inputs:
 %    SubjectId - Character vector (or string) specifying the subject
@@ -24,7 +24,7 @@ function [TaskIO] = getSubjectData(SubjectId)
 %               and RT.
 %
 % Example:
-%    Data = getSubjectData('subject123');
+%    Data = getTrainTaskIO('subject123');
 %
 
 %% Check to see whether data has been saved locally

@@ -1,14 +1,15 @@
-function [nll] = spth_nll(b,x,c,Y)
-% spth_nll.m
+function [nll] = spvm_nll(b,x,c,Y)
+% spvm_nll.m
 % Sam Berens (s.berens@sussex.ac.uk)
 % 22/07/2025
 %
-% Syntax:  nll = spth_nll(b, x, c, Y)
+% Syntax:  nll = spvm_nll(b, x, c, Y)
 %
 % Description:
-%    Computes the negative log-likelihood (nll) for a Softplus-tanh model
-%    using the von Mises distribution given a set of model parameters,
-%    predictor values, and observed angle responses.
+%    Computes the negative log-likelihood (nll) for the Softplus von Mises
+%    model using a hyperbolic arc-tangent link function. Required inputs
+%    are a set of model parameters, predictor values, and observed
+%    responses (field indices).
 %
 % Inputs:
 %    b   - A 2-element vector of model parameters.
@@ -20,13 +21,13 @@ function [nll] = spth_nll(b,x,c,Y)
 %    nll - The computed negative log-likelihood value.
 %
 % Example:
-%    nll = spth_nll([1, 0.5], x, c, Y);
+%    nll = spvm_nll([1, 0.5], x, c, Y);
 %
-% See also: spth_pred
+% See also: spvm_pred
 %
 Theta = wrapTo2Pi((Y-repmat(c,1,6)).*(pi/3));
 n = numel(x);
-[pmf,angles] = spth_pred(x,b);
+[pmf,angles] = spvm_pred(x,b);
 nll = nan(n,1);
 for iPred = 1:n
     p = pmf(iPred,:);

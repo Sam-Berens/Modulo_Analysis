@@ -1,16 +1,17 @@
-function [pmf,angles] = spth_pred(x,b)
-% spth_pred.m
+function [pmf,angles] = spvm_pred(x,b)
+% spvm_pred.m
 % Sam Berens (s.berens@sussex.ac.uk)
 % 24/03/2025
 %
-% Syntax:  [pmf, angles] = spth_pred(x, b)
+% Syntax:  [pmf, angles] = spvm_pred(x, b)
 %
 % Description:
 %    Predicts the probability mass function (pmf) over discrete angle bins
-%    using a Softplus-tanh model with the von Mises distribution. The
-%    function computes an intermediate prediction, converts it to a
-%    concentration parameter using r2k, and then calculates a von Mises
-%    probability density function that is normalized to yield the pmf.
+%    using the Softplus von Mises model with a hyperbolic arc-tangent link
+%    function. The function computes an intermediate prediction, converts
+%    it to a concentration parameter using r2k, and then calculates a von
+%    Mises probability density function that is normalised to yield the
+%    pmf.
 %
 % Inputs:
 %    x - Vector of predictor values.
@@ -24,14 +25,14 @@ function [pmf,angles] = spth_pred(x,b)
 %             prediction.
 %
 % Example:
-%    [pmf, angles] = spth_pred(x, [1, 0.5]);
+%    [pmf, angles] = spvm_pred(x, [1, 0.5]);
 %
 % Subfunctions:
-%    r2k   - Converts the Softplus-tanh output to a von Mises concentration
-%            parameter k.
+%    r2k   - Converts the inverse link function output to a von Mises
+%            concentration parameter, kappa.
 %    vmpdf - Computes the von Mises probability density function.
 %
-% See also: spth_nll
+% See also: spvm_nll
 %
 
 angles = (0:5).*(pi/3);
@@ -43,11 +44,11 @@ pmf = pdf./sum(pdf,2);
 return
 
 function [k] = r2k(r)
-% r2k converts the Softplus-tanh output values to a von Mises concentration
-% parameter k.
+% r2k converts the inverse link function output values to a von Mises
+% concentration parameter, kappa.
 %
 % Inputs:
-%    r - A vector of Softplus-tanh transformed predictor values.
+%    r - A vector of Softplus tanh transformed predictor values.
 %
 % Outputs:
 %    k - A vector of concentration parameters corresponding to r.
