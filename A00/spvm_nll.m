@@ -26,23 +26,23 @@ function [nll] = spvm_nll(b,x,c,Y)
 % See also: spvm_pred
 %
 Theta = wrapTo2Pi((Y-repmat(c,1,6)).*(pi/3));
-m = size(b,1);
+m = size(b,2);
 n = numel(x);
-nll = nan(m,n);
+nll = nan(n,m);
 for iParam = 1:m
-    [pmf,angles] = spvm_pred(x,b(iParam,:)');
+    [pmf,angles] = spvm_pred(x,b(:,iParam));
     for iResp = 1:n
         p = pmf(iResp,:);
         t = Theta(iResp,:);
         t = t(~isnan(t));
         y = arrayfun(@(tt)find(abs(tt-angles)<1e-6),t);
         ty = y(1:(end-1));
-        nll(iParam,iResp) = sum(...
+        nll(iResp,iParam) = sum(...
             [0,log(1-cumsum(p(ty)))] - ...
             log(p(y)) ...
             );
     end
 end
 nll(~isfinite(nll)) = -log(eps());
-nll = sum(nll,2);
+nll = sum(nll,1);
 return
