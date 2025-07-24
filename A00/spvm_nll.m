@@ -12,7 +12,7 @@ function [nll] = spvm_nll(b,x,c,Y)
 %    responses (field indices).
 %
 % Inputs:
-%    b   - A 2-element vector of model parameters.
+%    b   - A m-by-2 matrix of m model parameters to be evaluated.
 %    x   - Vector of predictor values.
 %    c   - Vector of target (correct) responses (as field indices).
 %    Y   - Matrix of observed responses (field indices) for each trial.
@@ -26,20 +26,23 @@ function [nll] = spvm_nll(b,x,c,Y)
 % See also: spvm_pred
 %
 Theta = wrapTo2Pi((Y-repmat(c,1,6)).*(pi/3));
+m = size(b,1);
 n = numel(x);
-[pmf,angles] = spvm_pred(x,b);
-nll = nan(n,1);
-for iPred = 1:n
-    p = pmf(iPred,:);
-    t = Theta(iPred,:);
-    t = t(~isnan(t));
-    y = arrayfun(@(tt)find(abs(tt-angles)<1e-6),t);
-    ty = y(1:(end-1));
-    nll(iPred) = sum(...
-        [0,log(1-cumsum(p(ty)))] - ...
-        log(p(y)) ...
-    );
+nll = nan(m,n);
+for iParam = 1:m
+    [pmf,angles] = spvm_pred(x,b(iParam,:)');
+    for iResp = 1:n
+        p = pmf(iResp,:);
+        t = Theta(iResp,:);
+        t = t(~isnan(t));
+        y = arrayfun(@(tt)find(abs(tt-angles)<1e-6),t);
+        ty = y(1:(end-1));
+        nll(iParam,iResp) = sum(...
+            [0,log(1-cumsum(p(ty)))] - ...
+            log(p(y)) ...
+            );
+    end
 end
 nll(~isfinite(nll)) = -log(eps());
-nll = sum(nll);
+nll = sum(nll,2);
 return

@@ -34,7 +34,9 @@ function [pmf,angles] = spvm_pred(x,b)
 %
 % See also: spvm_nll
 %
-
+if numel(b) ~= 2
+    error('b must be a 2-vector');
+end
 angles = (0:5).*(pi/3);
 xPred = log(1+exp(x-b(1)))*b(2);
 tPred = tanh(xPred);
