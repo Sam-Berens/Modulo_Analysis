@@ -79,18 +79,23 @@ transformed data {
   }
 }
 parameters {
-  // b0: Learning offset parameter.
-  real<lower=0, upper=maxX> b0;
+  // zb0: Unbounded, and unscaled learning offset parameter.
+  real zb0;
   
   // b1: Learning rate parameter.
   real b1;
 }
+transformed parameters {
+   // b0: Bounded and scaled learning offset parameter,
+   real<lower=0, upper=maxX> b0 = inv_logit(zb0) * maxX;
+}
 model {
+  // Logistic prior for zb0 ...
+  // ... yielding ...
   // Uniform prior for b0
-  target += -log(maxX);
+  target += logistic_lpdf(zb0 | 0, 1);
   
   // Cauchy prior for b1
-  //target += cauchy_lpdf(b1 | 0, 0.05);
   target += normal_lpdf(b1 | 0, 0.1);
   
   // lq: A vector of log-likelihoods for all attempts per trial.
