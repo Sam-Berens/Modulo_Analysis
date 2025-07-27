@@ -90,46 +90,42 @@ model {
   target += -log(maxX);
   
   // Cauchy prior for b1
-  target += cauchy_lpdf(b1 | 0, 0.05);
+  //target += cauchy_lpdf(b1 | 0, 0.05);
+  target += normal_lpdf(b1 | 0, 0.1);
   
   // lq: A vector of log-likelihoods for all attempts per trial.
   vector[n] lq;
   
   // Compute the trial-wise predicted probabilities.
-  vector[1] zero;
-  zero[1] = 0;
-  for (i in 1 : n) {
+  for (iTrial in 1 : n) {
     // kappa: Model-predicted von-Mises κ.
-    real xPred = log1p_exp(x[i] - b0) * b1;
+    real xPred = log1p_exp(x[iTrial] - b0) * b1;
     real tPred = tanh(xPred);
+    tPred = fmin(fmax(tPred, -1 + 1e-12), 1 - 1e-12);  // Flow protection
     real kappa = r2k(tPred);
     
-    // pmf: An 6-vector of predicted response probabilities ...
+    // lpmf: A 6-vector of predicted response log-probabilities ...
     // ... unsorted, with entries corresponding to theta.
-    vector[6] pmf;
+    vector[6] lpmf;
     for (k in 1 : 6) {
-      pmf[k] = exp(kappa * cos(theta[k]));
+      lpmf[k] = kappa * cos(theta[k]);
     }
-    pmf = pmf / sum(pmf);
+    lpmf = lpmf - log_sum_exp(lpmf);
     
-    // rpmf: A vector of predicted response probabilities ...
+    // rlpmf: A vector of predicted response log-probabilities ...
     // ... sorted, with entries corresponding to Y.
-    vector[nTry[i]] rpmf;
-    for (k in 1 : nTry[i]) {
-      rpmf[k] = pmf[Yidx[i, k]];
+    vector[nTry[iTrial]] rlpmf;
+    for (k in 1 : nTry[iTrial]) {
+      rlpmf[k] = lpmf[Yidx[iTrial, k]];
     }
-    
-    // orpmf: rpmf vector offset by a single zero.
-    vector[nTry[i]] orpmf = append_row(zero, rpmf[1 : (nTry[i] - 1)]);
-    
-    // corpmf: Cumulative offset response PMF ...
-    // ... (sum probability ruled out before each attempt).
-    vector[nTry[i]] corpmf = cumulative_sum(orpmf);
     
     // Update the log-likelihood for the current trial.
-    lq[i] = 0;
-    for (k in 1 : nTry[i]) {
-      lq[i] += log(rpmf[k]) - log(1 - corpmf[k]);
+    real cumsum_lq = negative_infinity();
+    lq[iTrial] = 0;
+    for (k in 1 : nTry[iTrial]) {
+      cumsum_lq = fmin(cumsum_lq, -1e-15); // Overflow protection
+      lq[iTrial] += rlpmf[k] - log1m_exp(cumsum_lq);
+      cumsum_lq = log_sum_exp(cumsum_lq, rlpmf[k]); 
     }
   }
   
