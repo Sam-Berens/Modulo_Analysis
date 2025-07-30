@@ -132,11 +132,14 @@ model {
   // Normal prior for beta1.
   // Exponential prior for beta2.
   for (iType in 1 : nTypes) {
-    target += logistic_lpdf(alpha1[iType] | 0, 1);
-    target += exponential_lpdf(alpha2[iType] | 1 / 0.1);
-    target += normal_lpdf(beta1[iType] | 0, 0.1);
-    target += exponential_lpdf(beta2[iType] | 1 / 0.01);
-
+    //target += logistic_lpdf(alpha1[iType] | 0, 1);
+    //target += exponential_lpdf(alpha2[iType] | 1 / 0.1);
+    //target += normal_lpdf(beta1[iType] | 0, 0.1);
+    //target += exponential_lpdf(beta2[iType] | 1 / 0.01);
+    alpha1[iType] ~ normal(0, 1);
+    alpha2[iType] ~ normal(0.4, 0.2) T[0,];
+    beta1[iType] ~ normal(0, 0.1);
+    beta2[iType] ~ normal(0.05, 0.02) T[0,];
   }
   
   // Parameter distributions for each pair type:
@@ -146,8 +149,10 @@ model {
   // Normal(alpha1,alpha2) for au;
   // Normal(beta1,beta2) for b;
   for (iPair in 1 : nPairs) {
-    target += std_normal_lpdf(zau[iPair]);
-    target += std_normal_lpdf(zb[iPair]);
+    //target += std_normal_lpdf(zau[iPair]);
+    //target += std_normal_lpdf(zb[iPair]);
+    zau[iPair] ~ normal(0, 1);
+    zb[iPair] ~ normal(0, 1);
   }
   
   // lq: A vector of log-likelihoods for all attempts per trial.
