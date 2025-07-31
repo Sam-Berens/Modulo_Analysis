@@ -128,16 +128,12 @@ transformed parameters {
 }
 model {
   // Logistic prior for alpha1.
-  // Exponential prior for alpha2.
+  // Half-normal prior for alpha2.
   // Normal prior for beta1.
-  // Exponential prior for beta2.
+  // Half-normal prior for beta2.
   for (iType in 1 : nTypes) {
-    //target += logistic_lpdf(alpha1[iType] | 0, 1);
-    //target += exponential_lpdf(alpha2[iType] | 1 / 0.1);
-    //target += normal_lpdf(beta1[iType] | 0, 0.1);
-    //target += exponential_lpdf(beta2[iType] | 1 / 0.01);
-    alpha1[iType] ~ normal(0, 1);
-    alpha2[iType] ~ normal(0.4, 0.2) T[0,];
+    alpha1[iType] ~ logistic(0, 1);
+    alpha2[iType] ~ normal(0.5, 0.2) T[0,];
     beta1[iType] ~ normal(0, 0.1);
     beta2[iType] ~ normal(0.05, 0.02) T[0,];
   }
