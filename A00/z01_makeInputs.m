@@ -22,7 +22,7 @@ function [] = z01_makeInputs()
 
 %% Make paths structure
 dirStruct = struct;
-dirStruct.Data = ['..',filesep,'..',filesep,'..',filesep,'Data',filesep];
+dirStruct.Data = ['..',filesep,'..',filesep,'Data',filesep];
 
 %% Get a list of subject IDs
 dirLits = dir(dirStruct.Data);
