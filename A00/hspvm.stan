@@ -145,8 +145,6 @@ model {
   // Normal(alpha1,alpha2) for au;
   // Normal(beta1,beta2) for b;
   for (iPair in 1 : nPairs) {
-    //target += std_normal_lpdf(zau[iPair]);
-    //target += std_normal_lpdf(zb[iPair]);
     zau[iPair] ~ normal(0, 1);
     zb[iPair] ~ normal(0, 1);
   }
