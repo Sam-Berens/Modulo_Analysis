@@ -14,18 +14,21 @@ for iSubject = 1:numel(subjectIds)
     pathToTaskIO = sprintf('..%s..%sData%s%s%sBehavioural%s',...
         filesep,filesep,filesep,char(sId),filesep,filesep);
 
-    %% TrainTaskIO.mat
-    [~,lsRes] = system(sprintf('ls -l %s | grep TrainTaskIO.mat',...
-        pathToTaskIO));
-    if contains(lsRes,'TrainTaskIO.mat')
-        delete([pathToTaskIO,'TrainTaskIO.mat']);
-    end
+    %% A00/
+    system(['rm -R ',pathToTaskIO,'A00']);
 
+    %% TrainTaskIO.mat
+    % [~,lsRes] = system(sprintf('ls -l %s | grep TrainTaskIO.mat',...
+    %     pathToTaskIO));
+    % if contains(lsRes,'TrainTaskIO.mat')
+    %     delete([pathToTaskIO,'TrainTaskIO.mat']);
+    % end
+    % 
     %% A00.mat
-    [~,lsRes] = system(sprintf('ls -l %s | grep A00.mat',...
-        pathToTaskIO));
-    if contains(lsRes,'A00.mat')
-        delete([pathToTaskIO,'A00.mat']);
-    end
+    % [~,lsRes] = system(sprintf('ls -l %s | grep A00.mat',...
+    %     pathToTaskIO));
+    % if contains(lsRes,'A00.mat')
+    %     delete([pathToTaskIO,'A00.mat']);
+    % end
 end
 return
