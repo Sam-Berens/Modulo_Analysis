@@ -75,6 +75,11 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
+  if [[ -f "$OUTPUT" ]]; then
+    echo "  Output already exists: $OUTPUT — skipping." >&2
+    continue
+  fi
+
   cmd=("$HSPVM_BIN" "sample" "num_chains=$NUM_CHAINS" "num_threads=$NUM_THREADS" \
     "init=$INITS" "data" "file=$INPUT" "output" "file=$OUTPUT")
 
