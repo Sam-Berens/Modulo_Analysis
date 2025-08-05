@@ -28,15 +28,15 @@ for iR = 1:runN
         'UniformOutput',false));
 
     % Combine and z-score
-    R = [RPs,dRPs]; % TO DO: Add squares????
-    %               % TO DO: Add censor regressors!!!
+    R = [RPs,dRPs]; % TODO: Add squares????
+    %               % TODO: Add censor regressors!!!
     R = zscore(R,[],1);
 
     % Compute mean frame-wise displacement
-    % TO DO!
+    % TODO!
 
     %%
-    % TO DO: Pass Extremes out for collation?
+    % TODO: Pass Extremes out for collation?
     % MaxAbs:
     Extremes_T = zeros(2,3);
     Extremes_T(1,:) = min(R(:,1:3));
@@ -69,7 +69,7 @@ for iR = 1:runN
     save(sprintf('%s%sRPs_%i.mat',epiDir,filesep,iR),'R');
 
     %% Print plots:
-    % TO DO: Extremes and plots should be saved in one place for all ppants
+    % TODO: Extremes and plots should be saved in one place for all ppants
 
     plot(TX,'-r');
     hold on;
