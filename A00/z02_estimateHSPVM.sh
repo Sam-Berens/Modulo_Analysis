@@ -75,7 +75,7 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  if [[ -f "$OUTPUT" ]]; then
+  if [[ -f "$DATA_DIR/$sid/Analysis/A00/Output_1.csv" ]]; then
     echo "  Output already exists: $OUTPUT — skipping." >&2
     continue
   fi
