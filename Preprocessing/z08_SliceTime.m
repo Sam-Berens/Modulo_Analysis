@@ -35,8 +35,8 @@ end
 for iRun = 1:nRuns
     SpmBatch{1}.spm.temporal.st.scans{iRun} = FilePath_EPIs{iRun};
 end
-% nslices set to zero to appease the spm jobman (Unused).
-SpmBatch{1}.spm.temporal.st.nslices = 0;
+% nslices set to 33 to appease the spm jobman (Unused, must be pos int).
+SpmBatch{1}.spm.temporal.st.nslices = 33;
 
 SpmBatch{1}.spm.temporal.st.tr = 2.2; % In seconds.
 
