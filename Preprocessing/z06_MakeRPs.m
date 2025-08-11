@@ -8,6 +8,7 @@ ExtremeParams(1,1).MaxAbsT = NaN;
 ExtremeParams(1,1).MaxAbsR = NaN;
 ExtremeParams(1,1).MaxDerT = NaN;
 ExtremeParams(1,1).MaxDerR = NaN;
+ExtremeParams(1,1).MaxFwd = NaN;
 
 rpFiles = dir([epiDir,filesep,'*.txt']);
 runN = numel(rpFiles);
@@ -27,19 +28,24 @@ for iR = 1:runN
         cellfun(@(y)sincInterp(qt,t,y),mat2cell(dRPs,nEpis-1,ones(1,6)),...
         'UniformOutput',false));
 
-    % Combine and z-score
-    R = [RPs,dRPs]; % TODO: Add squares????
-    %               % TODO: Add censor regressors!!!
-    R = zscore(R,[],1);
+    % Combine, make censor regressor and then z-score
+    R = [RPs,dRPs]; 
+    R = [R,R.^2]; % Add squares of og params and the derivs
+    
+    % Compute frame-wise displacement
+    fwd = nan(nEpis-1,1);
+    for ii= 1:(nEpis-1)  
+    ts = sum(abs(dRPs(ii,1:3)));
+    rs = sum(abs(dRPs(ii,4:6)));
+    fwd(ii,1) = ts + 50*rs;
+    end 
 
-    % Compute mean frame-wise displacement
-    % TODO!
 
     %%
     % TODO: Pass Extremes out for collation?
     % MaxAbs:
     Extremes_T = zeros(2,3);
-    Extremes_T(1,:) = min(R(:,1:3));
+    Extremes_T(1,:) = min(R(:,1:3)); 
     Extremes_T(2,:) = max(R(:,1:3));
     Extremes_R = zeros(2,3);
     Extremes_R(1,:) = min(R(:,4:6));
@@ -64,48 +70,75 @@ for iR = 1:runN
     MaxDer_dR = max(max(Extremes_dR(:,1:3)));
     ExtremeParams(1,1).MaxDerT = MaxDer_dT;
     ExtremeParams(1,1).MaxDerR = MaxDer_dR;
+    %Max framewise displacement:
+    ExtremeParams.MaxFwd = fwd;
 
+    threshold = 0.1 ;% pick meaningful threshold!!
+    linIdx = find(abs(dRPs)>=threshold); %volume<->volume changes so only want the derivatives(columns 7-12)
+    [volId,~] = ind2sub(size(dRPs),linIdx);
+    volId = unique(volId); %this is needed as technically you could get multiple columns being above threshold for the same volume
+    mask = zeros(nEpis,numel(volId));
+    for mm=1:numel(volId)
+    mask(volId(mm),mm)= 1;
+    end 
+
+    R = zscore(R,[],1); %after using the raw values to find the vols to put in the censor regresor - now we can normalise
+    R = [R,mask]; % append the censor regressor onto the other nuisance regressors
     %% Save RPS:
-    save(sprintf('%s%sRPs_%i.mat',epiDir,filesep,iR),'R');
+    save(sprintf('%s%sNuisance_R%i.mat',epiDir,filesep,iR),'R');
 
     %% Print plots:
-    % TODO: Extremes and plots should be saved in one place for all ppants
-
-    plot(TX,'-r');
+    % translations
+    subplot(2,1,1)
+    plot(RPs(:,1),'-r');
     hold on;
-    plot(TY,'-g');
-    plot(TZ,'-b');
-    plot(ndTX,'--','Color',[1.0,0.5,0.5]);
-    plot(ndTY,'--','Color',[0.5,1.0,0.5]);
-    plot(ndTZ,'--','Color',[0.5,0.5,1.0]);
-
-    Legend = legend('X','Y','Z','\DeltaX','\DeltaY','\DeltaZ');
+    plot(RPs(:,2),'-g');
+    plot(RPs(:,3),'-b');
+    plot(dRPs(:,1),'--','Color',[1.0,0.5,0.5]);
+    plot(dRPs(:,2),'--','Color',[0.5,1.0,0.5]);
+    plot(dRPs(:,3),'--','Color',[0.5,0.5,1.0]);
+    Legend = legend('X','Y','Z','\DeltaX','\DeltaY','\DeltaZ'); 
     set(Legend,'Location','NorthWest');
     title(sprintf('Translations for %s',subjectId));
     xlabel('Scans \rightarrow');
     ylabel('Displacement /mm');
-    %print('-dpng',sprintf('%s%s%s_Translations.png',epiDir,filesep,subjectId));
     pause(.1);
     hold off;
-    %rotations
-    plot(RX,'-m');
-    hold on;
-    plot(RY,'-y');
-    plot(RZ,'-c');
-    plot(ndRX,'--','Color',[1.0,0.5,1.0]);
-    plot(ndRY,'--','Color',[1.0,1.0,0.5]);
-    plot(ndRZ,'--','Color',[0.5,1.0,1.0]);
 
+    %rotations
+    subplot(2,1,2)
+    plot(RPs(:,4),'-m');
+    hold on;
+    plot(RPs(:,5),'-y');
+    plot(RPs(:,6),'-c');
+    plot(dRPs(:,4),'--','Color',[1.0,0.5,1.0]);
+    plot(dRPs(:,5),'--','Color',[1.0,1.0,0.5]);
+    plot(dRPs(:,6),'--','Color',[0.5,1.0,1.0]);
     Legend = legend('Pitch','Roll','Yaw','\DeltaPitch','\DeltaRoll','\DeltaYaw');
     set(Legend,'Location','NorthWest');
     title(sprintf('Rotations for %s',subjectId));
     xlabel('Scans \rightarrow');
-    %ylabel('Rotation /\circ');
-    %print('-dpng',sprintf('%s%s%s_Rotations.png',epiDir,filesep,subjectId));
+    ylabel('Rotation /rad');
+    print('-dpng',sprintf('%s%s%s_TsAndRs.png',epiDir,filesep,subjectId));
     pause(.1);
     hold off;
+    close(gcf);
 
-    %save([epiDir,filesep,'ExtremeParams.mat'],'ExtremeParams');
+    % create FWD graph
+    plot(fwd,'--','Color',[0,0.5,1]);
+    title(sprintf('Framewise displacement for %s',subjectId));
+    xlabel('Scans \rightarrow');
+    ylabel('Displacement /mm');
+    %save FWD figure
+    print('-dpng',sprintf('%s%s%s_FramewiseDisplacement.png',...
+        epiDir,filesep,subjectId)); 
+
+    %save extreme params matrix
+    rpsFolder = [dataDir,filesep,'RPs'];
+    mkdir(rpsFolder);    % if it already exists it will just print a warning
+    fnExpr = sprintf('%s%s%s%s%i%s',rpsFolder,filesep,...
+        'ExtremeParams_R',iR,subjectId,'.mat');
+    save(fnExpr,'ExtremeParams'); % save to group location
 end
 
 return
