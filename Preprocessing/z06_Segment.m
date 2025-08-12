@@ -23,7 +23,7 @@ clearvars -except 'subjectId' 'FileName_Structural' 'spmRoot' 'preprocDir';
 %% Create and execute SPM batch:
 SpmBatch = {};
 SpmBatch{1}.spm.spatial.preproc.channel.vols = {FileName_Structural};
-SpmBatch{1}.spm.spatial.preproc.channel.biasreg = 0.01;
+SpmBatch{1}.spm.spatial.preproc.channel.biasreg = 0.001; %default
 SpmBatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;
 SpmBatch{1}.spm.spatial.preproc.channel.write = [1 1];
 SpmBatch{1}.spm.spatial.preproc.tissue(1).tpm = ...
