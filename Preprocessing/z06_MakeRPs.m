@@ -1,8 +1,17 @@
 function [] = z06_MakeRPs(subjectId)
 
-dataDir = ['..',filesep,'..',filesep,'Data'];
+dataDir = dir(['..',filesep,'..',filesep,'Data']);
+dataDir = dataDir.folder;
 subjDir = [dataDir,filesep,subjectId];
 epiDir = [subjDir,filesep,'EPI'];
+rpsFolder = [dataDir,filesep,'RPs'];
+if ~exist(rpsFolder,"dir")
+    mkdir(rpsFolder);
+end
+anlysFolder = [subjDir,filesep,'Analysis',filesep,'Alpha00'];
+if ~exist(anlysFolder,"dir")
+    mkdir(anlysFolder);
+end
 
 ExtremeParams(1,1).MaxAbsT = NaN;
 ExtremeParams(1,1).MaxAbsR = NaN;
@@ -13,8 +22,10 @@ ExtremeParams(1,1).MaxFwd = NaN;
 rpFiles = dir([epiDir,filesep,'*.txt']);
 runN = numel(rpFiles);
 
-for iR = 1:runN
 
+
+
+for iR = 1:runN
     % Get data:
     FileName_RpText = [rpFiles(iR).folder,filesep,rpFiles(iR).name];
     RPs = readmatrix(FileName_RpText);
@@ -29,23 +40,22 @@ for iR = 1:runN
         'UniformOutput',false));
 
     % Combine, make censor regressor and then z-score
-    R = [RPs,dRPs]; 
+    R = [RPs,dRPs];
     R = [R,R.^2]; % Add squares of og params and the derivs
-    
+
     % Compute frame-wise displacement
     fwd = nan(nEpis-1,1);
-    for ii= 1:(nEpis-1)  
-    ts = sum(abs(dRPs(ii,1:3)));
-    rs = sum(abs(dRPs(ii,4:6)));
-    fwd(ii,1) = ts + 50*rs;
-    end 
+    for ii= 1:(nEpis-1)
+        ts = sum(abs(dRPs(ii,1:3)));
+        rs = sum(abs(dRPs(ii,4:6)));
+        fwd(ii,1) = ts + 50*rs;
+    end
 
 
     %%
-    % TODO: Pass Extremes out for collation?
     % MaxAbs:
     Extremes_T = zeros(2,3);
-    Extremes_T(1,:) = min(R(:,1:3)); 
+    Extremes_T(1,:) = min(R(:,1:3));
     Extremes_T(2,:) = max(R(:,1:3));
     Extremes_R = zeros(2,3);
     Extremes_R(1,:) = min(R(:,4:6));
@@ -71,7 +81,7 @@ for iR = 1:runN
     ExtremeParams(1,1).MaxDerT = MaxDer_dT;
     ExtremeParams(1,1).MaxDerR = MaxDer_dR;
     %Max framewise displacement:
-    ExtremeParams.MaxFwd = fwd;
+    ExtremeParams.MaxFwd = max(fwd);
 
     threshold = 0.1 ;% pick meaningful threshold!!
     linIdx = find(abs(dRPs)>=threshold); %volume<->volume changes so only want the derivatives(columns 7-12)
@@ -79,13 +89,13 @@ for iR = 1:runN
     volId = unique(volId); %this is needed as technically you could get multiple columns being above threshold for the same volume
     mask = zeros(nEpis,numel(volId));
     for mm=1:numel(volId)
-    mask(volId(mm),mm)= 1;
-    end 
+        mask(volId(mm),mm)= 1;
+    end
 
     R = zscore(R,[],1); %after using the raw values to find the vols to put in the censor regresor - now we can normalise
     R = [R,mask]; % append the censor regressor onto the other nuisance regressors
-    %% Save RPS:
-    save(sprintf('%s%sNuisance_R%i.mat',epiDir,filesep,iR),'R');
+    %% Save nuissance regressors - maybe these should be concatenated?:
+    save(sprintf('%s%sNuisance_R%i.mat',anlysFolder,filesep,iR),'R');
 
     %% Print plots:
     % translations
@@ -97,7 +107,7 @@ for iR = 1:runN
     plot(dRPs(:,1),'--','Color',[1.0,0.5,0.5]);
     plot(dRPs(:,2),'--','Color',[0.5,1.0,0.5]);
     plot(dRPs(:,3),'--','Color',[0.5,0.5,1.0]);
-    Legend = legend('X','Y','Z','\DeltaX','\DeltaY','\DeltaZ'); 
+    Legend = legend('X','Y','Z','\DeltaX','\DeltaY','\DeltaZ');
     set(Legend,'Location','NorthWest');
     title(sprintf('Translations for %s',subjectId));
     xlabel('Scans \rightarrow');
@@ -119,7 +129,7 @@ for iR = 1:runN
     title(sprintf('Rotations for %s',subjectId));
     xlabel('Scans \rightarrow');
     ylabel('Rotation /rad');
-    print('-dpng',sprintf('%s%s%s_TsAndRs.png',epiDir,filesep,subjectId));
+    print('-dpng',sprintf('%s%s%s_%i_TsAndRs.png',rpsFolder,filesep,subjectId,iR));
     pause(.1);
     hold off;
     close(gcf);
@@ -130,13 +140,12 @@ for iR = 1:runN
     xlabel('Scans \rightarrow');
     ylabel('Displacement /mm');
     %save FWD figure
-    print('-dpng',sprintf('%s%s%s_FramewiseDisplacement.png',...
-        epiDir,filesep,subjectId)); 
+    print('-dpng',sprintf('%s%s%s_%i_FramewiseDisplacement.png',...
+        rpsFolder,filesep,subjectId,iR));
+    pause(.1);
+    close(gcf)
 
-    %save extreme params matrix
-    rpsFolder = [dataDir,filesep,'RPs'];
-    mkdir(rpsFolder);    % if it already exists it will just print a warning
-    fnExpr = sprintf('%s%s%s%s%i%s',rpsFolder,filesep,...
+    fnExpr = sprintf('%s%s%s%i%s%s',rpsFolder,filesep,...
         'ExtremeParams_R',iR,subjectId,'.mat');
     save(fnExpr,'ExtremeParams'); % save to group location
 end
