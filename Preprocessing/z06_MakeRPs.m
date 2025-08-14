@@ -94,8 +94,8 @@ for iR = 1:runN
 
     R = zscore(R,[],1); %after using the raw values to find the vols to put in the censor regresor - now we can normalise
     R = [R,mask]; % append the censor regressor onto the other nuisance regressors
-    %% Save nuissance regressors - maybe these should be concatenated?:
-    save(sprintf('%s%sNuisance_R%i.mat',anlysFolder,filesep,iR),'R');
+    % Save nuissance regressors - maybe these should be concatenated?:
+    save(sprintf('%s%sR%i_NuisanceRs.mat',anlysFolder,filesep,iR),'R');
 
     %% Print plots:
     % translations
@@ -108,10 +108,17 @@ for iR = 1:runN
     plot(dRPs(:,2),'--','Color',[0.5,1.0,0.5]);
     plot(dRPs(:,3),'--','Color',[0.5,0.5,1.0]);
     Legend = legend('X','Y','Z','\DeltaX','\DeltaY','\DeltaZ');
-    set(Legend,'Location','NorthWest');
+    set(Legend,'Location','eastoutside');
     title(sprintf('Translations for %s',subjectId));
     xlabel('Scans \rightarrow');
     ylabel('Displacement /mm');
+    ax = gca;
+    ax.YAxis.Exponent = 0;   % turn off the ×10^n scaling
+    ax.YRuler.TickLabelFormat = '%.2f';  % control decimal places
+    ax.YTickLabelRotation = 45; 
+    ymin = -1;
+    ymax = 1.5 ;%hard coded based on inspecting the extremes
+    ylim([ymin,ymax]);
     pause(.1);
     hold off;
 
@@ -125,11 +132,19 @@ for iR = 1:runN
     plot(dRPs(:,5),'--','Color',[1.0,1.0,0.5]);
     plot(dRPs(:,6),'--','Color',[0.5,1.0,1.0]);
     Legend = legend('Pitch','Roll','Yaw','\DeltaPitch','\DeltaRoll','\DeltaYaw');
-    set(Legend,'Location','NorthWest');
+    set(Legend,'Location','eastoutside');
     title(sprintf('Rotations for %s',subjectId));
     xlabel('Scans \rightarrow');
     ylabel('Rotation /rad');
-    print('-dpng',sprintf('%s%s%s_%i_TsAndRs.png',rpsFolder,filesep,subjectId,iR));
+    ax = gca;
+    ax.YAxis.Exponent = 0;   % turn off the ×10^n scaling
+    ax.YRuler.TickLabelFormat = '%.2f';  % control decimal places
+    ax.YTickLabelRotation = 45;
+    ymin = -0.025;
+    % graphs are easily comparible between people
+    ymax = 0.05; %this is hard coded based on inspecting the extremes
+    ylim([ymin,ymax]);
+    print('-dpng',sprintf('%s%s%s_R%i_TsAndRs.png',rpsFolder,filesep,subjectId,iR));
     pause(.1);
     hold off;
     close(gcf);
@@ -140,13 +155,13 @@ for iR = 1:runN
     xlabel('Scans \rightarrow');
     ylabel('Displacement /mm');
     %save FWD figure
-    print('-dpng',sprintf('%s%s%s_%i_FramewiseDisplacement.png',...
+    print('-dpng',sprintf('%s%s%s_R%i_FramewiseDisplacement.png',...
         rpsFolder,filesep,subjectId,iR));
     pause(.1);
     close(gcf)
 
-    fnExpr = sprintf('%s%s%s%i%s%s',rpsFolder,filesep,...
-        'ExtremeParams_R',iR,subjectId,'.mat');
+    fnExpr = sprintf('%s%sR%i_%s%s%s',rpsFolder,filesep,...
+        iR,subjectId,'ExtremeParams_R','.mat');
     save(fnExpr,'ExtremeParams'); % save to group location
 end
 
