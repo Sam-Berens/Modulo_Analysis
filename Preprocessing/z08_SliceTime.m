@@ -14,13 +14,24 @@ subjDir = [dataDir,filesep,subjectId];
 
 %% Get the file paths for the EPI data
 epiFolder = [subjDir,filesep,'EPI'];
-realinedFolder = [epiFolder,filesep,'1_Realigned'];
-realinedDir = dir([realinedFolder,filesep,'R*']);
-runNames = {realinedDir.name}';
+realignedFolder = [epiFolder,filesep,'1_Realigned'];
+realignedDir = dir([realignedFolder,filesep,'R*']);
+
+%check if Slice time correction has already been done:
+temprlFolder = [subjDir,filesep,'EPI',filesep,'2_Temporal'];
+folder = dir(temprlFolder);
+folder = folder(~contains({folder.name}','.'));
+folderEmpty = isempty(folder);
+if ~folderEmpty
+    fprintf('Slice time correction appears to have already been run for %s\n',subjectId)
+    return
+end
+
+runNames = {realignedDir.name}';
 nRuns = numel(runNames);
 FilePath_EPIs = cell(nRuns,1);
 for iRun = 1:nRuns
-    sourceDir = [realinedDir(iRun).folder,filesep,runNames{iRun}];
+    sourceDir = [realignedDir(iRun).folder,filesep,runNames{iRun}];
     dirList = dir(sprintf('%s%su_*.nii',sourceDir,filesep));
     FilePath_EPIs{iRun} = cellfun(...
         @(x,y)[x,filesep,y],...
@@ -36,7 +47,9 @@ for iRun = 1:nRuns
     SpmBatch{1}.spm.temporal.st.scans{iRun} = FilePath_EPIs{iRun};
 end
 % nslices set to 33 to appease the spm jobman (Unused, must be pos int).
-SpmBatch{1}.spm.temporal.st.nslices = 33;
+%chose number not equal to real n so we can check that spm has not used
+%this number in the print out
+SpmBatch{1}.spm.temporal.st.nslices = 33; 
 
 SpmBatch{1}.spm.temporal.st.tr = 2.2; % In seconds.
 
@@ -60,8 +73,8 @@ spm_jobman('run',SpmBatch);
 
 %% Move new files
 for iRun = 1:nRuns
-    sourceDir = [realinedFolder,filesep,runNames{iRun}];
-    targetDir = [epiFolder,filesep,'2_Temporal',filesep,runNames{iRun}];
+    sourceDir = [realignedFolder,filesep,runNames{iRun}];
+    targetDir = [temprlFolder,filesep,runNames{iRun}];
     mkdir(targetDir);
     movefile(...
         [sourceDir,filesep,'au_*.nii'],...
