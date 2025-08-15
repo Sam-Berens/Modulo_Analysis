@@ -4,14 +4,13 @@ dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir.folder;
 subjDir = [dataDir,filesep,subjectId];
 epiDir = [subjDir,filesep,'EPI'];
+
 rpsFolder = [dataDir,filesep,'RPs'];
 if ~exist(rpsFolder,"dir")
     mkdir(rpsFolder);
 end
-anlysFolder = [subjDir,filesep,'Analysis',filesep,'Alpha00'];
-if ~exist(anlysFolder,"dir")
-    mkdir(anlysFolder);
-end
+
+censorThresh = 0.9; % mm fwd
 
 ExtremeParams(1,1).MaxAbsT = NaN;
 ExtremeParams(1,1).MaxAbsR = NaN;
@@ -21,9 +20,6 @@ ExtremeParams(1,1).MaxFwd = NaN;
 
 rpFiles = dir([epiDir,filesep,'*.txt']);
 runN = numel(rpFiles);
-
-
-
 
 for iR = 1:runN
     % Get data:
@@ -39,27 +35,38 @@ for iR = 1:runN
         cellfun(@(y)sincInterp(qt,t,y),mat2cell(dRPs,nEpis-1,ones(1,6)),...
         'UniformOutput',false));
 
-    % Combine, make censor regressor and then z-score
-    R = [RPs,dRPs];
-    R = [R,R.^2]; % Add squares of og params and the derivs
-
     % Compute frame-wise displacement
     fwd = nan(nEpis-1,1);
-    for ii= 1:(nEpis-1)
-        ts = sum(abs(dRPs(ii,1:3)));
-        rs = sum(abs(dRPs(ii,4:6)));
-        fwd(ii,1) = ts + 50*rs;
+    for ii = 1:(nEpis-1)
+        translations = sum(abs(dRPs(ii,1:3)));
+        rotations = sum(abs(dRPs(ii,4:6)));
+        fwd(ii,1) = translations + 50*rotations;
+    end
+    fwd = sincInterp(qt,t,fwd);
+
+    % Compute censors
+    volIdxs = find(fwd > censorThresh);
+    censors = zeros(nEpis,numel(volIdxs));
+    for ii = 1:numel(volIdxs)
+        censors(volIdxs(ii),ii)= 1;
     end
 
+    % Construct R
+    R = [RPs,dRPs,RPs.^2,dRPs.^2,fwd]; %%%%%%%%%%%%%%%%%%%%%%%% TO CONSIDER
+    R = zscore(R,[],1);
+    R = [R,censors];
 
-    %%
+    % Save R
+    save(sprintf('%s%sRPs_%i.mat',epiDir,filesep,iR),'R');
+
+    %% THIS NEEDS SOME WORK
     % MaxAbs:
     Extremes_T = zeros(2,3);
-    Extremes_T(1,:) = min(R(:,1:3));
-    Extremes_T(2,:) = max(R(:,1:3));
+    Extremes_T(1,:) = min(RPs(:,1:3));
+    Extremes_T(2,:) = max(RPs(:,1:3));
     Extremes_R = zeros(2,3);
-    Extremes_R(1,:) = min(R(:,4:6));
-    Extremes_R(2,:) = max(R(:,4:6));
+    Extremes_R(1,:) = min(RPs(:,4:6));
+    Extremes_R(2,:) = max(RPs(:,4:6));
     Extremes_T = abs(Extremes_T);
     Extremes_R = abs(Extremes_R);
     MaxAbs_T = max(max(Extremes_T(:,1:3)));
@@ -69,35 +76,22 @@ for iR = 1:runN
 
     % MaxDer:
     Extremes_dT = zeros(2,3);
-    Extremes_dT(1,:) = min(R(:,7:9));
-    Extremes_dT(2,:) = max(R(:,7:9));
+    Extremes_dT(1,:) = min(dRPs(:,1:3));
+    Extremes_dT(2,:) = max(dRPs(:,1:3));
     Extremes_dR = zeros(2,3);
-    Extremes_dR(1,:) = min(R(:,10:12));
-    Extremes_dR(2,:) = max(R(:,10:12));
+    Extremes_dR(1,:) = min(dRPs(:,4:6));
+    Extremes_dR(2,:) = max(dRPs(:,4:6));
     Extremes_dT = abs(Extremes_dT);
     Extremes_dR = abs(Extremes_dR);
     MaxDer_dT = max(max(Extremes_dT(:,1:3)));
     MaxDer_dR = max(max(Extremes_dR(:,1:3)));
     ExtremeParams(1,1).MaxDerT = MaxDer_dT;
     ExtremeParams(1,1).MaxDerR = MaxDer_dR;
-    %Max framewise displacement:
+
+    % Max framewise displacement:
     ExtremeParams.MaxFwd = max(fwd);
 
-    threshold = 0.1 ;% pick meaningful threshold!!
-    linIdx = find(abs(dRPs)>=threshold); %volume<->volume changes so only want the derivatives(columns 7-12)
-    [volId,~] = ind2sub(size(dRPs),linIdx);
-    volId = unique(volId); %this is needed as technically you could get multiple columns being above threshold for the same volume
-    mask = zeros(nEpis,numel(volId));
-    for mm=1:numel(volId)
-        mask(volId(mm),mm)= 1;
-    end
-
-    R = zscore(R,[],1); %after using the raw values to find the vols to put in the censor regresor - now we can normalise
-    R = [R,mask]; % append the censor regressor onto the other nuisance regressors
-    % Save nuissance regressors - maybe these should be concatenated?:
-    save(sprintf('%s%sR%i_NuisanceRs.mat',anlysFolder,filesep,iR),'R');
-
-    %% Print plots:
+    %% Print plots. THIS NEEDS SOME WORK TOO
     % translations
     subplot(2,1,1)
     plot(RPs(:,1),'-r');
