@@ -1,4 +1,4 @@
-function [] = z06_MakeRPs(subjectId)
+function [MotionStats] = z06_MakeRPs(subjectId)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir.folder;
@@ -12,17 +12,12 @@ end
 
 censorThresh = 0.9; % mm fwd
 
-ExtremeParams(1,1).MaxAbsT = NaN;
-ExtremeParams(1,1).MaxAbsR = NaN;
-ExtremeParams(1,1).MaxDerT = NaN;
-ExtremeParams(1,1).MaxDerR = NaN;
-ExtremeParams(1,1).MaxFwd = NaN;
-
 rpFiles = dir([epiDir,filesep,'*.txt']);
 runN = numel(rpFiles);
+MotionStats = struct;
 
 for iR = 1:runN
-    % Get data:
+    % Get data
     FileName_RpText = [rpFiles(iR).folder,filesep,rpFiles(iR).name];
     RPs = readmatrix(FileName_RpText);
     nEpis = size(RPs,1);
@@ -48,7 +43,7 @@ for iR = 1:runN
     volIdxs = find(fwd > censorThresh);
     censors = zeros(nEpis,numel(volIdxs));
     for ii = 1:numel(volIdxs)
-        censors(volIdxs(ii),ii)= 1;
+        censors(volIdxs(ii),ii) = 1;
     end
 
     % Construct R
@@ -57,7 +52,18 @@ for iR = 1:runN
     R = [R,censors];
 
     % Save R
-    save(sprintf('%s%sRPs_%i.mat',epiDir,filesep,iR),'R');
+    save(sprintf('%s%sRP%i.mat',epiDir,filesep,iR),'R');
+
+    %% Populate MotionStats
+    MotionStats(iR,1).subjectId = categorical({subjectId});
+    MotionStats(iR,1).runIdx = iR;
+    MotionStats(iR,1).disRang = ...
+        max(RPs(:,1:3),[],1) - min(RPs(:,1:3),[],1);
+    MotionStats(iR,1).totTrav = norm(MotionStats(iR,1).maxDisp);
+    MotionStats(iR,1).rotRang = ...
+        rad2deg(max(RPs(:,4:6),[],1) - min(RPs(:,4:6),[],1));
+    % https://chatgpt.com/share/68a0a8dc-5028-8003-b235-dbab491e5fd6
+    MotionStats(iR,1).rotTrav
 
     %% THIS NEEDS SOME WORK
     % MaxAbs:
