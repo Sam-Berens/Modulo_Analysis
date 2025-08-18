@@ -1,4 +1,4 @@
-function [MotionStats] = z06_MakeRPs(subjectId)
+function [] = z06_MakeRPs(subjectId)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir.folder;
@@ -6,19 +6,18 @@ subjDir = [dataDir,filesep,subjectId];
 epiDir = [subjDir,filesep,'EPI'];
 
 rpsFolder = [dataDir,filesep,'RPs'];
-if ~exist(rpsFolder,"dir")
+if ~exist(rpsFolder,'dir')
     mkdir(rpsFolder);
 end
 
-censorThresh = 0.9; % mm fwd
+censorThresh = 0.9; % mm FWD
 
-rpFiles = dir([epiDir,filesep,'*.txt']);
-runN = numel(rpFiles);
-MotionStats = struct;
+rpList = dir([epiDir,filesep,'*.txt']);
+nRuns = numel(rpList);
 
-for iR = 1:runN
+for iR = 1:nRuns
     % Get data
-    FileName_RpText = [rpFiles(iR).folder,filesep,rpFiles(iR).name];
+    FileName_RpText = [rpList(iR).folder,filesep,rpList(iR).name];
     RPs = readmatrix(FileName_RpText);
     nEpis = size(RPs,1);
 
@@ -30,14 +29,10 @@ for iR = 1:runN
         cellfun(@(y)sincInterp(qt,t,y),mat2cell(dRPs,nEpis-1,ones(1,6)),...
         'UniformOutput',false));
 
-    % Compute frame-wise displacement
-    fwd = nan(nEpis-1,1);
-    for ii = 1:(nEpis-1)
-        translations = sum(abs(dRPs(ii,1:3)));
-        rotations = sum(abs(dRPs(ii,4:6)));
-        fwd(ii,1) = translations + 50*rotations;
-    end
-    fwd = sincInterp(qt,t,fwd);
+    % Compute frame-wise displacement (FWD)
+    translations = sum(abs(dRPs(:,1:3)),2);
+    rotations = sum(abs(dRPs(:,4:6)),2);
+    fwd = translations + 50*rotations;
 
     % Compute censors
     volIdxs = find(fwd > censorThresh);
@@ -52,50 +47,7 @@ for iR = 1:runN
     R = [R,censors];
 
     % Save R
-    save(sprintf('%s%sRP%i.mat',epiDir,filesep,iR),'R');
-
-    %% Populate MotionStats
-    MotionStats(iR,1).subjectId = categorical({subjectId});
-    MotionStats(iR,1).runIdx = iR;
-    MotionStats(iR,1).disRang = ...
-        max(RPs(:,1:3),[],1) - min(RPs(:,1:3),[],1);
-    MotionStats(iR,1).totTrav = norm(MotionStats(iR,1).maxDisp);
-    MotionStats(iR,1).rotRang = ...
-        rad2deg(max(RPs(:,4:6),[],1) - min(RPs(:,4:6),[],1));
-    % https://chatgpt.com/share/68a0a8dc-5028-8003-b235-dbab491e5fd6
-    MotionStats(iR,1).rotTrav
-
-    %% THIS NEEDS SOME WORK
-    % MaxAbs:
-    Extremes_T = zeros(2,3);
-    Extremes_T(1,:) = min(RPs(:,1:3));
-    Extremes_T(2,:) = max(RPs(:,1:3));
-    Extremes_R = zeros(2,3);
-    Extremes_R(1,:) = min(RPs(:,4:6));
-    Extremes_R(2,:) = max(RPs(:,4:6));
-    Extremes_T = abs(Extremes_T);
-    Extremes_R = abs(Extremes_R);
-    MaxAbs_T = max(max(Extremes_T(:,1:3)));
-    MaxAbs_R = max(max(Extremes_R(:,1:3)));
-    ExtremeParams(1,1).MaxAbsT = MaxAbs_T;
-    ExtremeParams(1,1).MaxAbsR = MaxAbs_R;
-
-    % MaxDer:
-    Extremes_dT = zeros(2,3);
-    Extremes_dT(1,:) = min(dRPs(:,1:3));
-    Extremes_dT(2,:) = max(dRPs(:,1:3));
-    Extremes_dR = zeros(2,3);
-    Extremes_dR(1,:) = min(dRPs(:,4:6));
-    Extremes_dR(2,:) = max(dRPs(:,4:6));
-    Extremes_dT = abs(Extremes_dT);
-    Extremes_dR = abs(Extremes_dR);
-    MaxDer_dT = max(max(Extremes_dT(:,1:3)));
-    MaxDer_dR = max(max(Extremes_dR(:,1:3)));
-    ExtremeParams(1,1).MaxDerT = MaxDer_dT;
-    ExtremeParams(1,1).MaxDerR = MaxDer_dR;
-
-    % Max framewise displacement:
-    ExtremeParams.MaxFwd = max(fwd);
+    save(sprintf('%s%sRP%i.mat',epiDir,filesep,iR),'R'); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %% Print plots. THIS NEEDS SOME WORK TOO
     % translations
@@ -162,7 +114,6 @@ for iR = 1:runN
 
     fnExpr = sprintf('%s%sR%i_%s%s%s',rpsFolder,filesep,...
         iR,subjectId,'ExtremeParams_R','.mat');
-    save(fnExpr,'ExtremeParams'); % save to group location
 end
 
 return
