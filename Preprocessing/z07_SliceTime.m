@@ -6,13 +6,7 @@ function [] = z07_SliceTime(subjectId)
 % 0.5*TA = 1056.25 ms
 % Slice numbers corresponding to 0.5*TA = (33 and 66)
 % Time of slices 33 and 66 = 1057.5 ms (variable?)
-% 0.5*TA assuming an agap = 66;
-tSignal = (0:32)'*gap;
-% Slice order is interleaved, starting on odd numbered slices (1-ordered)
-sliceOrder = reshape([(1:17);[(18:33),NaN]],34,1);
-sliceOrder = sliceOrder(~isnan(sliceOrder));
-sliceOrder = [sliceOrder;sliceOrder];
-tSlice = tSignal(sliceOrder);verage 66 ms inter-slice gap: 1056 ms
+% 0.5*TA assuming an average 66 ms inter-slice gap: 1056 ms
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;
