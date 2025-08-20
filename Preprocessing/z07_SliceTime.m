@@ -1,4 +1,4 @@
-function [] = z08_SliceTime(subjectId)
+function [] = z07_SliceTime(subjectId)
 % Useful details:
 % TR = 2200 ms
 % TA = 2112.5 ms
@@ -6,7 +6,13 @@ function [] = z08_SliceTime(subjectId)
 % 0.5*TA = 1056.25 ms
 % Slice numbers corresponding to 0.5*TA = (33 and 66)
 % Time of slices 33 and 66 = 1057.5 ms (variable?)
-% 0.5*TA assuming an average 66 ms inter-slice gap: 1056 ms
+% 0.5*TA assuming an agap = 66;
+tSignal = (0:32)'*gap;
+% Slice order is interleaved, starting on odd numbered slices (1-ordered)
+sliceOrder = reshape([(1:17);[(18:33),NaN]],34,1);
+sliceOrder = sliceOrder(~isnan(sliceOrder));
+sliceOrder = [sliceOrder;sliceOrder];
+tSlice = tSignal(sliceOrder);verage 66 ms inter-slice gap: 1056 ms
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;
@@ -23,7 +29,8 @@ folder = dir(temprlFolder);
 folder = folder(~contains({folder.name}','.'));
 folderEmpty = isempty(folder);
 if ~folderEmpty
-    fprintf('Slice time correction appears to have already been run for %s\n',subjectId)
+    fprintf('Slice time correction has already been run for %s!\n',...
+        subjectId)
     return
 end
 
@@ -46,10 +53,10 @@ end
 for iRun = 1:nRuns
     SpmBatch{1}.spm.temporal.st.scans{iRun} = FilePath_EPIs{iRun};
 end
-% nslices set to 33 to appease the spm jobman (Unused, must be pos int).
-%chose number not equal to real n so we can check that spm has not used
-%this number in the print out
-SpmBatch{1}.spm.temporal.st.nslices = 33; 
+% nslices set to 1 to appease the spm jobman (Unused, must be pos int).
+% chose number not equal to real n so we can check that spm has not used
+% this number in the print out
+SpmBatch{1}.spm.temporal.st.nslices = 1; 
 
 SpmBatch{1}.spm.temporal.st.tr = 2.2; % In seconds.
 

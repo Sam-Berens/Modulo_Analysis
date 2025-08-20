@@ -1,4 +1,4 @@
-function [] = z07_Coregister(subjectId)
+function [] = z09_Coregister(subjectId)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;
@@ -13,12 +13,28 @@ muDir = dir([subjDir,'/EPI/meanu_*.nii']);
 FileName_Mu = [muDir.folder,filesep,muDir.name];
 
 %% Get the file paths for the EPI data
-epiDir = [subjDir,filesep,'EPI/1_Realigned'];
+epiDir = [subjDir,filesep,'EPI'];
+reaDir = [epiDir,filesep,'1_Realigned'];
+temDir = [epiDir,filesep,'2_Temporal'];
+
+runNames = dir([reaDir,filesep,'R*']);
+runNames = {runNames.name}';
 
 FilePath_EPIs = cell(0,1);
-for iRun = 1:5
-    sourceDir = [epiDir,filesep,'R',int2str(iRun)];
+for iRun = 1:numel(runNames)
+    % Collect realigned EPIs
+    sourceDir = [reaDir,filesep,runNames{iRun}];
     dirList = dir(sprintf('%s%su_*.nii',sourceDir,filesep));
+    FilePath_EPIs = [FilePath_EPIs;
+        cellfun(...
+        @(x,y)[x,filesep,y],...
+        {dirList.folder}',...
+        {dirList.name}',...
+        'UniformOutput',false)]; %#ok<AGROW>
+
+    % Collect ST corrected EPIs
+    sourceDir = [temDir,filesep,runNames{iRun}];
+    dirList = dir(sprintf('%s%sau_*.nii',sourceDir,filesep));
     FilePath_EPIs = [FilePath_EPIs;
         cellfun(...
         @(x,y)[x,filesep,y],...

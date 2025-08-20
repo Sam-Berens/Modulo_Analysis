@@ -1,4 +1,4 @@
-function [] = z06_Segment(subjectId)
+function [] = z08_Segment(subjectId)
 
 preprocDir = pwd;
 spmRoot = getSpmHome();
