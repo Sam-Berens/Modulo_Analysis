@@ -47,10 +47,10 @@ end
 for iRun = 1:nRuns
     SpmBatch{1}.spm.temporal.st.scans{iRun} = FilePath_EPIs{iRun};
 end
-% nslices set to 1 to appease the spm jobman (Unused, must be pos int).
+% nslices set to 33 to appease the spm jobman (Unused, must be pos int >1).
 % chose number not equal to real n so we can check that spm has not used
 % this number in the print out
-SpmBatch{1}.spm.temporal.st.nslices = 1; 
+SpmBatch{1}.spm.temporal.st.nslices = 2; 
 
 SpmBatch{1}.spm.temporal.st.tr = 2.2; % In seconds.
 
