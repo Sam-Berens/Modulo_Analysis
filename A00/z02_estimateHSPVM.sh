@@ -11,6 +11,7 @@
 #   NUM_THREADS  Number of threads for hspvm (default: 8)
 #   INITS        Path to initialization file (default: ./Inits/Init.json)
 #   DRY_RUN      If set to 1, only print commands without running them (default: 0)
+#   OVERWRITE    If set to 1, overwrite existing output files (default: 0)
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -21,6 +22,7 @@ NUM_CHAINS="${NUM_CHAINS:-8}"
 NUM_THREADS="${NUM_THREADS:-8}"
 INITS="${INITS:-./Inits/Init.json}"
 DRY_RUN="${DRY_RUN:-0}"
+OVERWRITE="${OVERWRITE:-0}"
 
 # Verify prerequisites
 if [[ ! -d "$DATA_DIR" ]]; then
@@ -75,7 +77,7 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  if [[ -f "$DATA_DIR/$sid/Analysis/A00/Output_1.csv" ]]; then
+  if [[ "$OVERWRITE" != "1" && -f "$DATA_DIR/$sid/Analysis/A00/Output_1.csv" ]]; then
     echo "  Output already exists: $OUTPUT — skipping." >&2
     continue
   fi
