@@ -410,6 +410,7 @@ function [] = plotRhat(Rhat,savePath)
 fh = figure('Units','normalized','OuterPosition',[0,0,1,1]);
 R = Rhat(:,2:end).Variables;
 imagesc(R);
+colorbar;
 xticks(1:size(R,2));
 xtickangle(90);
 xticklabels(strrep(Rhat.Properties.VariableNames(2:end),'_','.'));

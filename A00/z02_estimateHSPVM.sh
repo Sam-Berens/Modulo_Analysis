@@ -5,6 +5,7 @@
 #   ./z02_estimateHSPVM.sh [subject_id...]
 #
 # Environment variables:
+#   ADAPTDELTA   Target acceptance rate (default: 0.95)
 #   DATA_DIR     Path to data directory (default: ../../Data)
 #   HSPVM_BIN    Path to the hspvm executable (default: ./hspvm)
 #   NUM_CHAINS   Number of chains for hspvm (default: 8)
@@ -16,6 +17,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+ADAPTDELTA="${ADAPTDELTA:-0.95}"
 DATA_DIR="${DATA_DIR:-../../Data}"
 HSPVM_BIN="${HSPVM_BIN:-./hspvm}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
@@ -82,8 +84,9 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  cmd=("$HSPVM_BIN" "sample" "num_chains=$NUM_CHAINS" "num_threads=$NUM_THREADS" \
-    "init=$INITS" "data" "file=$INPUT" "output" "file=$OUTPUT")
+  cmd=("$HSPVM_BIN" "sample" "adapt" "delta=$ADAPTDELTA" \
+    "num_chains=$NUM_CHAINS" "num_threads=$NUM_THREADS" \
+    "random" "seed=1729" "init=$INITS" "data" "file=$INPUT" "output" "file=$OUTPUT")
 
   echo "  ${cmd[*]}"
   if [[ "$DRY_RUN" != "1" ]]; then
