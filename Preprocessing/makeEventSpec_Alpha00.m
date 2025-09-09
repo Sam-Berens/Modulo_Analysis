@@ -10,6 +10,7 @@ for ii=1:nSubs
     subDir = [dataDir,filesep,subjectIds{ii}];
     anlDir = [subDir,filesep,'Analysis'];
     alphDir = [anlDir,filesep,'Alpha00'];
+
     if ~exist(alphDir, "dir")
         mkdir(alphDir);
     end
@@ -31,8 +32,6 @@ for ii=1:nSubs
         %% Stim loop
         for iStim = 0:5
             %probs unecess but just clear variables to be sure
-            onsets =  [];%maximum num rows should be 
-            durations = [];
             names = {[],[]};
 
             names = {sprintf('i%i',iStim),'other_stims'}; %change to better name?
