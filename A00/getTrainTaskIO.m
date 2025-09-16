@@ -7,7 +7,7 @@ function [TaskIO] = getTrainTaskIO(SubjectId)
 %
 % Description:
 %    Retrieves and processes subject-specific task data from a web server
-%    (or local file if avaible). The function downloads TaskIO data,
+%    (or local file if available). The function downloads TaskIO data,
 %    converts the structure to a table, assigns proper data types to each
 %    field, and organizes trials based on predefined pair type indices. It
 %    also creates unique trial identifiers.
