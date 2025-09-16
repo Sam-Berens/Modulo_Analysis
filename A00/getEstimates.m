@@ -398,10 +398,10 @@ for iP = 1:36
         'Kernel','on');
     xlabel('a');
     ylabel('b');
-    sgtitle(sprintf('%i+%i',(ix-1),(iy-1)));
+    sgtitle(sprintf('%i+%i',(iy-1),(ix-1)));
 
-    print(fh,sprintf('%s%sP%i_%i+%i.png',...
-        figPath,filesep,iP,(ix-1),(iy-1)),'-dpng');
+    print(fh,sprintf('%s%sP%02d_%i+%i.png',...
+        figPath,filesep,iP,(iy-1),(ix-1)),'-dpng');
     close(fh);
 end
 return

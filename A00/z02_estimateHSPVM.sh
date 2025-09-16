@@ -5,7 +5,7 @@
 #   ./z02_estimateHSPVM.sh [subject_id...]
 #
 # Environment variables:
-#   ADAPTDELTA   Target acceptance rate (default: 0.95)
+#   ADAPTDELTA   Target acceptance rate (default: 0.90)
 #   DATA_DIR     Path to data directory (default: ../../Data)
 #   HSPVM_BIN    Path to the hspvm executable (default: ./hspvm)
 #   NUM_CHAINS   Number of chains for hspvm (default: 8)
@@ -17,7 +17,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-ADAPTDELTA="${ADAPTDELTA:-0.95}"
+ADAPTDELTA="${ADAPTDELTA:-0.90}"
 DATA_DIR="${DATA_DIR:-../../Data}"
 HSPVM_BIN="${HSPVM_BIN:-./hspvm}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
