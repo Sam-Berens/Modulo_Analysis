@@ -24,20 +24,21 @@ if numWorkers > 8
         return
     end
 end
+
 if isempty(subjectIds)
     dirLits = dir('../../Data');
     subjectIds = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
 end
 
-%% Apply the function
-if numWorkers==1
+% Apply the function
+if numWorkers == 1
     for iSubject = 1:numel(subjectIds)
         func(subjectIds{iSubject});
     end
 else
     parpool(numWorkers);
     parfor iSubject = 1:numel(subjectIds)
-        func(subjectIds{iSubject}); %#ok<PFBNS>
+       func(subjectIds{iSubject}); %#ok<PFBNS>
     end
 end
 return

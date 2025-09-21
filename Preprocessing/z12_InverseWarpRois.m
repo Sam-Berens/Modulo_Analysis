@@ -1,4 +1,8 @@
-function [] = z10_InverseWarpRois()
+function [] = z12_InverseWarpRois(G)
+%%% NOTE THIS NEEDS RUNNING AGAIN. AND THIS NEEDS WORK
+
+error('This script needs work');
+
 % Create inverse normalised versions of some image(s). The image that is inverse-normalised should
 % be in alignment with the template (generated during the warping procedure). Note that the results
 % have the same dimensions as the “flow fields”, but are mapped to the original images via the affine
@@ -12,14 +16,13 @@ function [] = z10_InverseWarpRois()
 %to do this we could just do coregistration on the ROIs with the template
 %as the reference image? - or we could use the formula below
 
-dataDir = dir(['..',filesep,'..',filesep,'Data']);
-dataDir = dataDir(1).folder;
-mRoiDir = [dataDir,filesep,'_Group',filesep,'MniRois'];
-drtlDir = [dataDir,filesep,'_Group',filesep,'G1',filesep,'Structural', filesep,'DARTEL_templates'];
+pathData = ['..',filesep,'..',filesep,'Data'];
+pathSource = [pathData,filesep,'_Group',filesep,'MniRois'];
+pathTemplates = [pathData,filesep,'_Group',filesep,'Structural',filesep,'DARTEL_Templates']
 grpRoiDir = [drtlDir, filesep, 'GroupSpaceRois'];
 
 if ~exist(grpRoiDir, "dir")
-    mkdir(grpRoiDir)
+    mkdir(grpRoiDir);
 end
 
 %find group template

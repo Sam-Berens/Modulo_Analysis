@@ -1,4 +1,4 @@
-function [] = z09_Coregister(subjectId)
+function [] = z08_Coregister(subjectId)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;
