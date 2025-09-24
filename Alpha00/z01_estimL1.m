@@ -1,4 +1,4 @@
-function []= estimL1_Alpha00(groupFunc)
+function [] = z01_estimL1(groupFunc)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;

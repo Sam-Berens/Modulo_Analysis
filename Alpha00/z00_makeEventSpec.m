@@ -1,4 +1,4 @@
-function []= makeEventSpec_Alpha00(groupFunc)
+function [] = z00_makeEventSpec(groupFunc)
 
 dataDir = dir(['..',filesep,'..',filesep,'Data']);
 dataDir = dataDir(1).folder;
