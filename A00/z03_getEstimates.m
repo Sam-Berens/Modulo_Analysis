@@ -1,4 +1,4 @@
-function [] = getEstimates(subjectIds)
+function [] = z03_getEstimates(subjectIds)
 
 % Turn off warnings
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
