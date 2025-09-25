@@ -81,7 +81,7 @@ fns.groupRois = cellfun(@(s)[paths.groupRois,filesep,s],...
 fns.flowfields = cell(size(subjectIds));
 for iSubject = 1:numel(subjectIds)
     dirList = dir(...
-        [paths.flowfields{iSubject},filesep,'u_*_Template_6.nii']);
+        [paths.flowfields{iSubject},filesep,'u_*.nii']);
     fns.flowfields{iSubject} = [dirList.folder,filesep,dirList.name];
 end
 
@@ -99,17 +99,21 @@ end
 % First we load M2 and M3
 M2 = load(fns.group2Mni);
 M2 = M2.mni.affine;
+iM2 = inv(M2);
 M3 = spm_vol(fns.template);
 M3 = M3.mat;
 
 % Now loop through ROIs to transform .mat and write
+if ~exist(paths.groupRois,'dir')
+    mkdir(paths.groupRois);
+end
 for iRoi = 1:numel(roisToWarp)
     V1 = spm_vol(fns.roisToWarp{iRoi});
     Y1 = spm_read_vols(V1);
     V1.fname = fns.groupRois{iRoi};
     V1.descrip = ['Affined2Group ',V1.descrip];
     M1 = V1.mat;
-    M4 = M3*M2\M1;
+    M4 = M3*iM2*M1; %#ok<MINV>
     V1.mat = M4;
     spm_write_vol(V1,Y1);
 end
