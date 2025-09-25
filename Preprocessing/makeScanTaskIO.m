@@ -382,8 +382,17 @@ return
 
 function [TaskIO] = developTaskIO(runData,taskEvents,subjectId,iRun,logFilId)
 
-% Convert TaskIO into a table and pre-allocate new variables
+% Convert TaskIO into a table
 TaskIO = struct2table(runData.TaskIO);
+
+% Recode 1Back trials as 2Back trials and vice versa. ...
+% ... These labels were mixed up in the code that ran the in-scanner task.
+s1 = strcmp(TaskIO.TrialType,'2Back');
+s2 = strcmp(TaskIO.TrialType,'1Back');
+TaskIO.TrialType(s1) = {'1Back'};
+TaskIO.TrialType(s2) = {'2Back'};
+
+% Type and pre-allocate new variables
 TaskIO.TrialType = categorical(TaskIO.TrialType);
 TaskIO.SubjectId = repmat(categorical({subjectId}),size(TaskIO,1),1);
 TaskIO.iRun = repmat(iRun,size(TaskIO,1),1);
@@ -454,7 +463,7 @@ for ii = 1:size(taskEvents,1)
 end
 
 %% Check for stimulus decoding mismatches between Spike and PsychToolbox
-s = ~strcmp(TaskIO.TrialType,'Null');
+s = TaskIO.TrialType~=categorical({'Null'});
 agree = [TaskIO.a(s),TaskIO.b(s)]==[TaskIO.a_pcm(s),TaskIO.b_pcm(s)];
 if sum(~agree,'all')==1
     [trial,pos] = find(~agree);
