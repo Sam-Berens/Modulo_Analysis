@@ -114,6 +114,14 @@ taskEvents = [...
     sessData(4).taskEvents;
     sessData(5).taskEvents;
     ];
+% Remove missing data
+if strcmp(subjectId,'5f8b9fd0')
+    TaskIO.phiScrol = [];
+    TaskIO.phiRespo = [];
+    TaskIO.phiKeyp1 = [];
+    taskEvents.heartPhase = [];
+    heartEvents = [];
+end
 save('ScanTaskIO.mat',...
     "TaskIO","taskEvents","scanDiagnostics","heartEvents");
 fclose(logFilId);
