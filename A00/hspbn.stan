@@ -1,6 +1,6 @@
 functions {
   // findIdx: Finds arg2 in arg1 and returns the index
-  // this is the bit which selects an error angle for each of the attempts in a trial
+  // This is used to identify which angular error was made on each attempt
   int findIdx(array[] complex v, complex c) {
     real dist = positive_infinity();
     int idx = 0;
@@ -37,15 +37,13 @@ data {
   // c: Array of target responses for each trial.
   array[nTrials] int<lower=0, upper=5> c;
   
-  // Y: Array of responses for each trial (reals allow NaNs). THIS IS WHERE THE RAW INT RESPONSES COME IN
+  // Y: Array of responses for each trial (reals allow NaNs).
   array[nTrials, 6] real Y;
 }
 transformed data {
   // maxX: Max value of the predictor variable x.
   real<lower=0> maxX = max(x);
   
-
-  //SO I THINK WE CAN STILL DEFINE THE TRIALS IN TERMS OF ANGULAR ERRORS
   // theta: A vector to store all possible angular errors.
   // roots: A corresponding array of complex roots of unity.
   vector[6] theta;
@@ -56,8 +54,6 @@ transformed data {
     roots[i] = exp(to_complex(0, t));
   }
   
-
-  //AM LEAVING THIS BIT AS ITS STILL FINE TO ASSIGN PROBABILITIES TO THE RESP OPTIONS BASED ON THEIR DISTANCE FROM TARGET LABEL - EVEN IF WE'RE NOT USING THIS TO COMPUTE THE PROABILITY
   // Yidx: Array of response indices for theta.
   // nTry: Number of attempts per trial.
   array[nTrials, 6] int Yidx;
@@ -139,7 +135,6 @@ model {
   vector[nTrials] lq;
   
   // Compute the trial-wise predicted probabilities.
-  //- THIS IS WHERE WE SHOULD MAKE P+ AND P-
   for (iTrial in 1 : nTrials) {
     // pid: ID of the pair tested on this trial
     int pid = pairId[iTrial];
