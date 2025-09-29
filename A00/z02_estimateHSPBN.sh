@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Run the hspvm model over specified subjects or all subjects with 8-character IDs
+# Run the hsbn model over specified subjects or all subjects with 8-character IDs
 #
 # Usage:
-#   ./z02_estimateHSPVM.sh [subject_id...]
+#   ./z02_estimateHSPBN.sh [subject_id...]
 #
 # Environment variables:
 #   ADAPTDELTA   Target acceptance rate (default: 0.90)
 #   DATA_DIR     Path to data directory (default: ../../Data)
-#   HSPVM_BIN    Path to the hspvm executable (default: ./hspvm)
-#   NUM_CHAINS   Number of chains for hspvm (default: 8)
-#   NUM_THREADS  Number of threads for hspvm (default: 8)
+#   HSPBN_BIN    Path to the hspbn executable (default: ./hspbn)
+#   NUM_CHAINS   Number of chains for hspbn (default: 8)
+#   NUM_THREADS  Number of threads for hspbn (default: 8)
 #   INITS        Path to initialization file (default: ./Inits/Init.json)
 #   DRY_RUN      If set to 1, only print commands without running them (default: 0)
 #   OVERWRITE    If set to 1, overwrite existing output files (default: 0)
@@ -19,7 +19,7 @@ IFS=$'\n\t'
 
 ADAPTDELTA="${ADAPTDELTA:-0.90}"
 DATA_DIR="${DATA_DIR:-../../Data}"
-HSPVM_BIN="${HSPVM_BIN:-./hspvm}"
+HSPBN_BIN="${HSPVM_BIN:-./hspbn}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
 NUM_THREADS="${NUM_THREADS:-8}"
 INITS="${INITS:-./Inits/Init.json}"
@@ -32,8 +32,8 @@ if [[ ! -d "$DATA_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -x "$HSPVM_BIN" ]]; then
-  echo "Warning: hspvm binary not found or not executable at: $HSPVM_BIN" >&2
+if [[ ! -x "$HSPBN_BIN" ]]; then
+  echo "Warning: hspbn binary not found or not executable at: $HSPBN_BIN" >&2
   echo "         Proceeding anyway; execution will fail unless this is corrected." >&2
 fi
 
@@ -72,14 +72,14 @@ fi
 for sid in "${subjects[@]}"; do
   echo "=== Subject: $sid ==="
   INPUT="$DATA_DIR/$sid/Analysis/A00/InputData.json"
-  OUTPUT="$DATA_DIR/$sid/Analysis/A00/vonMises/Output.csv"
+  OUTPUT="$DATA_DIR/$sid/Analysis/A00/Binomial/Output.csv"
 
   if [[ ! -f "$INPUT" ]]; then
     echo "  Missing input: $INPUT — skipping." >&2
     continue
   fi
 
-  if [[ "$OVERWRITE" != "1" && -f "$DATA_DIR/$sid/Analysis/A00/vonMises/Output_1.csv" ]]; then
+  if [[ "$OVERWRITE" != "1" && -f "$DATA_DIR/$sid/Analysis/A00/Binomial/Output_1.csv" ]]; then
     echo "  Output already exists: $OUTPUT — skipping." >&2
     continue
   fi

@@ -1,7 +1,7 @@
 function [r] = pC2r(pC)
 % Returns the resultant vectors (r) corresponding to the model-predicted
 % probability of a correct response on the first attempt of a trial in the
-% hspvm model. This function is used to compute "memoisation points" -
+% hspvm model. This function is used to compute "memorisation points" -
 % i.e., when during training, a given pair has been well-learnt.
 
 % Th function f() takes a value of kappa (the von Mises concentration
