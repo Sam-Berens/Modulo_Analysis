@@ -72,11 +72,16 @@ fi
 for sid in "${subjects[@]}"; do
   echo "=== Subject: $sid ==="
   INPUT="$DATA_DIR/$sid/Analysis/A00/InputData.json"
-  OUTPUT="$DATA_DIR/$sid/Analysis/A00/Binomial/Output.csv"
+  OUTPUTDIR="$DATA_DIR/$sid/Analysis/A00/Binomial"
+  OUTPUT="$OUTPUTDIR/Output.csv"
 
   if [[ ! -f "$INPUT" ]]; then
     echo "  Missing input: $INPUT — skipping." >&2
     continue
+  fi
+
+  if [[ -d "$OUTPUTDIR" ]]; then
+    mkdir "$OUTPUTDIR"
   fi
 
   if [[ "$OVERWRITE" != "1" && -f "$DATA_DIR/$sid/Analysis/A00/Binomial/Output_1.csv" ]]; then
