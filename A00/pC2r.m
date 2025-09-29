@@ -1,4 +1,4 @@
-function [r] = getLearnOffset(pC)
+function [r] = pC2r(pC)
 % Returns the resultant vectors (r) corresponding to the model-predicted
 % probability of a correct response on the first attempt of a trial in the
 % hspvm model. This function is used to compute "memorisation points" -
