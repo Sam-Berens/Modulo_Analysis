@@ -1,41 +1,45 @@
-function [x] = getLearnOffset(a,b)
-% a is the learning onset for a given question type
-% b is the associated learning rate
-% x is the learning offset for that same question type
+function [r] = getLearnOffset(pC)
+% Returns the resultant vectors (r) corresponding to the model-predicted
+% probability of a correct response on the first attempt of a trial in the
+% hspvm model. This function is used to compute "memorisation points" -
+% i.e., when during training, a given pair has been well-learnt.
 
-%function that takes a value of kappa (conc param of vonMis)
-%and gives the probability of the target bin being chosen
- f = @(k)exp(k)/sum(exp(k*cos((0:5)*pi/3)));
+% Th function f() takes a value of kappa (the von Mises concentration
+% parameter and returns the probability of a correct response.
+f = @(k)exp(k)/sum(exp(k*cos((0:5)*pi/3)));
 
- %estimate the value of kappa required to get a probability of 0.99
- % for the target bin
-cK = fmincon(@(k)(f(k)-0.99).^2,1);
+% The following call to fmincon inverts f() for the values in pC. That is,
+% it identifies the values of kappa that map to values of pC.
+kappa = nan(size(pC));
+for ii = 1:numel(pC)
+    kappa(ii) = fminunc(@(k)(f(k)-pC(ii)).^2,1,...
+        optimoptions(@fminunc,'Display','off'));
+end
 
-%convert your cK (estimated kappa) value to the resultant vector,R, for the subject's response
-%as mapped on a unit circle?
+% Finally, we solve one of four polynomials to invert the r -> kappa
+% approximation provided by Fisher (1993). This returns a the values r that
+% correspond to the the values of kappa computed above.
+[r]= k2r(kappa);
+return
 
-% %% For any value of cK computation would be:
-% if cK < 7e-3
-%     cR = cK;
-% elseif (cK < 3.648) && (cK >= 1.2516)
-%     cR = (-sqrt((10000*cK^2 - 19800*cK + 33709)) +100*cK + 179) / 278;
-% elseif cK < 1.2516
-%     cR = roots([5,0,6,0,12,(-6*cK)]);
-%     cR = abs(cR(end,1));
-% else
-%     cR = roots([1,-4,3,(-1/cK)]);
-%     cR = abs(cR(2));
-% end
-%we only need this bit because we know that kappa is 10.5736 for a P(corr) of 0.99
-cR = roots([1,-4,3,(-1/cK)]); 
-cR = abs(cR(2));
-
-
-%to get from our resultant vector to the subject's learning offset, x, 
-%we use the following formula, which is a rearraned
-%version of our softplus learning model...
-
-x = log(exp(atanh(cR)/b)-1) + a;
-end 
-
-
+function [r] = k2r(kappa)
+kappaMag = abs(kappa);
+kappaSgn = sign(kappa);
+r = nan(size(kappa));
+for ii = 1:numel(kappa)
+    k = kappaMag(ii);
+    if k < 7e-3
+        r(ii) = k;
+    elseif (k < 3.648) && (k >= 1.2516)
+        r(ii) = (-sqrt((10000*k^2 - 19800*k + 33709)) +100*k + 179) / 278;
+    elseif k < 1.2516
+        temp = roots([5,0,6,0,12,(-6*k)]);
+        r(ii) = abs(temp(end));
+    else
+        temp = roots([1,-4,3,(-1/k)]);
+        r(ii) = abs(temp(2));
+    end
+end
+r(r>1) = 1;
+r = r.*kappaSgn;
+return
