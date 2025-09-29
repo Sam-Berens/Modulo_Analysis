@@ -1,4 +1,4 @@
-function [] = z03_getEstimatesHSPVM(subjectIds)
+function [] = z03_getEstimsHSPVM(subjectIds)
 
 % Turn off warnings
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
@@ -23,7 +23,10 @@ dirPaths.Data = ['..',filesep,'..',filesep,'Data',filesep];
 dirPaths.IO = @(sId) [dirPaths.Data,sId,filesep,...
     'Analysis',filesep,'A00',filesep];
 
-dirPaths.groupOut = [dirPaths.Data,filesep,'_Group',filesep,'A00',filesep,'vonMises'];
+dirPaths.groupOut = [dirPaths.Data,...
+    filesep,'_Group',...
+    filesep,'A00',...
+    filesep,'vonMises'];
 if ~exist(dirPaths.groupOut,'dir')
     mkdir(dirPaths.groupOut);
 end

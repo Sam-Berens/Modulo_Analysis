@@ -1,4 +1,4 @@
-function [] = z03_getEstimates(subjectIds)
+function [] = z03_getEstimsHSPBN(subjectIds)
 
 % Turn off warnings
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
@@ -23,7 +23,11 @@ dirPaths.Data = ['..',filesep,'..',filesep,'Data',filesep];
 dirPaths.IO = @(sId) [dirPaths.Data,sId,filesep,...
     'Analysis',filesep,'A00',filesep];
 
-dirPaths.groupOut = [dirPaths.Data,filesep,'_Group',filesep,'A00'];
+dirPaths.groupOut = [...
+    dirPaths.Data,filesep,...
+    '_Group',filesep,...
+    'A00',filesep,...
+    'Binomial'];
 if ~exist(dirPaths.groupOut,'dir')
     mkdir(dirPaths.groupOut);
 end
@@ -135,7 +139,7 @@ StanOut = [S,StanOut];
 return
 
 function [Profic] = expractProfic(subjectId,P,maxX)
-theta = (0:5).*(pi/3);
+sigmoid = @(x) 1./(1+exp(-x));
 [a,b] =  ind2sub([6,6],1:(6^2));
 names = cellfun(@(i1,i2)sprintf('%i_%i',i1,i2),...
     num2cell(a-1),num2cell(b-1),'UniformOutput',false);
@@ -144,11 +148,8 @@ P0 = nan(size(P,1),6^2);
 for ii = 1:(6^2)
     a = P.(['a_',num2str(ii)]);
     b = P.(['b_',num2str(ii)]);
-    r = tanh(b.*log(1+exp(maxX-a)));
-    k = r2k(r);
-    pmf = exp(cos(theta).*k);
-    pmf = pmf./sum(pmf,2);
-    P0(:,ii) = pmf(:,1);
+    xPred = b.*log(1+exp(maxX-a));
+    P0(:,ii) = sigmoid(-log(6) + xPred);
 end
 
 X = mat2cell(P0,size(P,1),ones(1,36));
@@ -230,33 +231,6 @@ med = xi(ii);
 upp = xi(ii);
 return
 
-function [k] = r2k(r)
-% r2k converts the inverse link function output values to a von Mises
-% concentration parameter, kappa.
-%
-% Inputs:
-%    r - A vector of Softplus tanh transformed predictor values.
-%
-% Outputs:
-%    k - A vector of concentration parameters corresponding to r.
-%
-% The conversion uses piecewise definitions based on abs(r).
-%
-k = nan(size(r));
-for ii = 1:1:numel(r)
-    cr = abs(r(ii));
-    if (cr < 0.85) && (cr >= 0.53)
-        ck = -0.4 + (1.39*cr) + (0.43/(1-cr));
-    elseif cr < 0.53
-        ck = (2*cr) + (cr^3) + (5*(cr^5)/6);
-    else
-        ck = ((cr^3) - (4*(cr^2)) + (3*cr))^-1;
-    end
-    k(ii) = ck*sign(r(ii));
-end
-k(k>700) = 700;
-k(k<-700) = -700;
-return
 
 function [Estims] = extractEstims(subjectId,StanOut,param,maxX)
 Estims.EAP = nan(1,numel(param));
