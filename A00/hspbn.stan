@@ -139,17 +139,17 @@ model {
     // pid: ID of the pair tested on this trial
     int pid = pairId[iTrial];
     
-    // One-hot odds and probabilities for each bin
-    // xPred can range between positive and negative infinity ? although that requires a negative b?
-    real xPred = log1p_exp(x[iTrial] - a[pid]) * b[pid]; //soft plus but we're not putting it through tanh anymore
-    real oddCor = exp(-log(6) + xPred);
-    real PrCorr = oddCor / (1 + oddCor);
-    real PrInco = 1 - PrCorr; //probability to share between other options
-    real PrIncs = PrInco / 5; //probability of each individual wrong choice
+    // Compute binomial probabilities: prCorr, prInco.
+    // xPred ∈ [-∞, ∞], given by SoftPlus(x-a)*b.
+    real xPred = log1p_exp(x[iTrial] - a[pid]) * b[pid];
+    real prCorr = inv_logit(-log(6) + xPred);
+    real prInco = 1 - prCorr;
+    // Split prInco among all incorrect responses.
+    real prBads = prInco / 5;
 
     // lpmf: A 6-vector of predicted response log-probabilities ...
     // ... unsorted, with entries corresponding to theta.
-     vector[6] lpmf = log([PrCorr,PrIncs,PrIncs,PrIncs,PrIncs,PrIncs]');
+     vector[6] lpmf = log([prCorr,prBads,prBads,prBads,prBads,prBads]');
 
     // rlpmf: A vector of predicted response log-probabilities ...
     // ... sorted, with entries corresponding to Y.
