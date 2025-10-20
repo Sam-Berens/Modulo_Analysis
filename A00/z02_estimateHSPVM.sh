@@ -80,7 +80,7 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  if [[ -d "$OUTPUTDIR" ]]; then
+  if [[ ! -d "$OUTPUTDIR" ]]; then
     mkdir "$OUTPUTDIR"
   fi
 

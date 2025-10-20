@@ -19,7 +19,7 @@ IFS=$'\n\t'
 
 ADAPTDELTA="${ADAPTDELTA:-0.90}"
 DATA_DIR="${DATA_DIR:-../../Data}"
-HSPBN_BIN="${HSPVM_BIN:-./hspbn}"
+HSPBN_BIN="${HSPBN_BIN:-./hspbn}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
 NUM_THREADS="${NUM_THREADS:-8}"
 INITS="${INITS:-./Inits/Init.json}"
@@ -80,7 +80,7 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  if [[ -d "$OUTPUTDIR" ]]; then
+  if [[ ! -d "$OUTPUTDIR" ]]; then
     mkdir "$OUTPUTDIR"
   fi
 
@@ -89,7 +89,7 @@ for sid in "${subjects[@]}"; do
     continue
   fi
 
-  cmd=("$HSPVM_BIN" "sample" "adapt" "delta=$ADAPTDELTA" \
+  cmd=("$HSPBN_BIN" "sample" "adapt" "delta=$ADAPTDELTA" \
     "num_chains=$NUM_CHAINS" "num_threads=$NUM_THREADS" \
     "random" "seed=1729" "init=$INITS" "data" "file=$INPUT" "output" "file=$OUTPUT")
 
