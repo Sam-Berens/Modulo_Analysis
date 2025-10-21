@@ -1,78 +1,66 @@
-function [] = z00_makeEventSpec(groupFunc)
+function [] = z00_makeEventSpec(G)
 
-dataDir = dir(['..',filesep,'..',filesep,'Data']);
-dataDir = dataDir(1).folder;
+% Set some constants
+tr = 2.2;
+stimIds = (0:6)';
+stimDur = 3/tr; % Duration of Spark stimuli
+decisiDur = 6/tr; % Duration of Decision period
+dirs.Data = dir(['..',filesep,'..',filesep,'Data']);
+subjectIds = getSubjectIds(G);
 
-subjectIds = groupFunc(); %this will be e.g. getG1()
-nSubs = numel(subjectIds);
+% Subject loop
+for iSubject = 1:numel(subjectIds)
 
-for ii=1:nSubs
-    subDir = [dataDir,filesep,subjectIds{ii}];
-    anlDir = [subDir,filesep,'Analysis'];
-    alphDir = [anlDir,filesep,'Alpha00'];
+    % Set required directory paths
+    cId = subjectIds{iSubject};
+    dirs.Subject = [dirs.Data,filesep,cId];
+    dirs.Behav = [dirs.Subject,filesep,'Behavioural'];
+    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
 
-    if ~exist(alphDir, "dir")
-        mkdir(alphDir);
-    end
-    %get TaskIO
-    behaDir = [subDir,filesep,'Behavioural'];
-    % Load the ScanTaskIO
+    % Get ScanTaskIO
     try
-        X = load([behaDir,filesep,'ScanTaskIO.mat']);
+        STIO = load([dirs.Behav,filesep,'ScanTaskIO.mat']);
     catch
-        fprintf(['Either you specified the filename of TaskIO wrong or'...
-            'the file is corrupt/too big \n Filename:%s\n'],[behaDir,filesep,'ScanTaskIO.mat'])
-        return
+        error('Cannot load ScanTaskIO.mat for %s!',cId);
     end
-    taskIO = X.TaskIO;
-    stimDur = 3/2.2;
-    stims = 0:5;
-    runs = unique(taskIO.iRun)';
-    for iRun = runs
-        %% Stim loop
-        for iStim = 0:5
-            %probs unecess but just clear variables to be sure
-            names = {[],[]};
 
-            names = {sprintf('i%i',iStim),'other_stims'}; %change to better name?
-            tau = [...
-                taskIO.tauShowA((taskIO.a==iStim)&(taskIO.iRun==iRun));
-                taskIO.tauShowB((taskIO.b==iStim)&(taskIO.iRun==iRun))];
-            tau = sort(tau); %so this is all the onsents for the rgi in this run
-         
-            nuis = stims(~ismember(stims,iStim))';
-            decisTau = taskIO.tauArray((taskIO.iRun==iRun) & ~isnan(taskIO.tauArray));
-            nuisTau = [...
-                taskIO.tauShowA((ismember(taskIO.a,nuis))&(taskIO.iRun==iRun)); %all other stims at A
-                taskIO.tauShowB((ismember(taskIO.b,nuis))&(taskIO.iRun==iRun)); %all other stims at B
-                decisTau; %all decision periods
-                ];
+    % Loop through stimuli and runs
+    TaskIO = STIO.TaskIO;
+    runIds = unique(TaskIO.iRun)';
+    for iStim = stimIds
+        signalName = sprintf('i%i',iStim);
 
-            %preacllocate mats
-            onsets = cell(1,2);
-            durations = cell(1,2);
-            %load in values for RGI
-            onsets{1,1} = tau; %load in the scan times for regressor of interest
-            durations{1,1} = ones(size(tau))*stimDur;
-            %load in values for RGI and nuis
-            onsets{1,2} = sort(nuisTau);
-            nuisDur = ones(size(nuisTau))*stimDur;
-            nuisDur(ismember(sort(nuisTau), decisTau)) = 6/2.2; %change the durs for decision periods
-            durations{1,2} =nuisDur;
-
-            %% save event spec for 1 run and 1 stim at a time
-            folderName = [alphaDir,filesep,sprintf('i%i_R%i', iStim, runs(iRun))];
-            if ~exist(folderName, "dir")
-                mkdir(folderName);
-            end
-            eventSpecFn = [folderName, filesep, 'EventSpec.mat'];
-            save(eventSpecFn, "names","durations","onsets", "-mat"); %does order of saving matter?
-
-
+        % Set and create the output directory (if needed)
+        dirs.Target = [dirs.Alpha00,filesep,signalName];
+        if ~exist(dirs.Target, "dir")
+            mkdir(dirs.Target);
         end
 
+        for iRun = runIds
+            % Specify the names (e.g., [i0, ###, Decision])
+            names = {signalName,'###','Decision'};
+
+            % Specify the onsets (tauSignal, tauResidu, tauDecision)
+            T = TaskIO(TaskIO.iRun==iRun,:);
+            tauAB = [T.tauShowA,T.tauShowB];
+            sAB = [T.a==iStim,T.b==iStim];
+            sNan = isnan(tauAB);
+            tauSignal = sort(tauAB(sAB));
+            tauResidu = sort(tauAB((~sAB)&(~sNan)));
+            tauDecisi = T.tauArray(~isnan(T.tauArray));
+            onsets = {tauSignal,tauResidu,tauDecisi};
+
+            % Specify the durations [stimDur, stimDur, decisiDur]
+            durations = {...
+                ones(size(tauSignal)).*stimDur,...
+                ones(size(tauResidu)).*stimDur,...
+                ones(size(tauDecisi)).*decisiDur};
+
+            % Save the EventSpec
+            outFn = sprintf('%s%sEventSpec_R%i.mat',...
+                dirs.Target,filesep,iRun);
+            save(outFn,'names','onsets','durations');
+        end
     end
 end
-
 return
-
