@@ -30,7 +30,7 @@ tr = 2.2;
 stimIds = (0:5)';
 stimDur = 3/tr; % Duration of Spark stimuli
 decisiDur = 6/tr; % Duration of Decision period
-dirs.Data = dir(['..',filesep,'..',filesep,'Data']);
+dirs.Data = ['..',filesep,'..',filesep,'Data'];
 subjectIds = getSubjectIds(G);
 
 % Subject loop
