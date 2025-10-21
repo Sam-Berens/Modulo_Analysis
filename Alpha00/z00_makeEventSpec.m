@@ -7,17 +7,19 @@ function [] = z00_makeEventSpec(G)
 %   organised to allow for Least-Squares-Separate decoding in SPM.
 %
 %   The function performs the following steps:
-%     1. Loads behavioural task data (ScanTaskIO.mat) for each subject. 2.
-%     Iterates through all stimuli (i0–i5) and task runs. 3. Extracts event
-%     onsets for:
-%        - The stimulus of interest ("i0" ... "i5") - Residual stimuli
-%        ("###") - Decision periods ("Decision")
+%     1. Loads behavioural task data (ScanTaskIO.mat) for each subject.
+%     2. Iterates through all stimuli (i0–i5) and task runs.
+%     3. Extracts event onsets for:
+%        - The stimulus of interest ("i0" ... "i5")
+%        - Residual stimuli ("###")
+%        - Decision periods ("Decision")
 %     4. Assigns durations in TR units:
-%        - Spark stimuli: 3/tr - Decision periods: 6/tr
+%        - Spark stimuli: 3/tr
+%        - Decision periods: 6/tr
 %     5. Saves an EventSpec_R*.mat file per run containing:
-%          • names      - cell array of event names • onsets     - cell
-%          array of onset times (in TR units) • durations  - cell array of
-%          durations (in TR units)
+%        • names      - cell array of event names
+%        • onsets     - cell array of onset times (in TR units)
+%        • durations  - cell array of durations (in TR units)
 %
 %   Outputs:
 %     EventSpec_R*.mat files are saved in:
