@@ -1,8 +1,31 @@
 function [] = z00_makeEventSpec(G)
+% Generate and save first-level model specification files for Alpha00.
+%
+%   z00_makeEventSpec(G) creates first-level model specification files for
+%   Alpha00 across all subjects in the group defined by the input groupId
+%   (G). These files contain stimulus names, onsets, and durations,
+%   organised to allow for Least-Squares-Separate decoding in SPM.
+%
+%   The function performs the following steps:
+%     1. Loads behavioural task data (ScanTaskIO.mat) for each subject. 2.
+%     Iterates through all stimuli (i0–i5) and task runs. 3. Extracts event
+%     onsets for:
+%        - The stimulus of interest ("i0" ... "i5") - Residual stimuli
+%        ("###") - Decision periods ("Decision")
+%     4. Assigns durations in TR units:
+%        - Spark stimuli: 3/tr - Decision periods: 6/tr
+%     5. Saves an EventSpec_R*.mat file per run containing:
+%          • names      - cell array of event names • onsets     - cell
+%          array of onset times (in TR units) • durations  - cell array of
+%          durations (in TR units)
+%
+%   Outputs:
+%     EventSpec_R*.mat files are saved in:
+%       */[Subject]/Analysis/Alpha00/i*/EventSpec_R*.mat
 
 % Set some constants
 tr = 2.2;
-stimIds = (0:6)';
+stimIds = (0:5)';
 stimDur = 3/tr; % Duration of Spark stimuli
 decisiDur = 6/tr; % Duration of Decision period
 dirs.Data = dir(['..',filesep,'..',filesep,'Data']);
