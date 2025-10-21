@@ -1,101 +1,160 @@
-function [] = z01_estimL1(groupFunc)
+function [] = z01_estimL1(G)
+% Estimate first-level GLMs for Alpha00.
+%
+%   z01_estimL1(G) estimates first-level SPM models for Alpha00 (using the
+%   Least-Squares-Separate method) across all subjects in the group defined
+%   by G and for each stimulus (i0–i5).
+%
+%   Inputs:
+%     G  - Group identifier consumed by getSubjectIds(G).
+%
+%   Requirements / Assumptions:
+%     • Event specification files exist at:
+%         */[Subject]/Analysis/Alpha00/i*/EventSpec_R*.mat
+%     • Realignment parameter files exist at:
+%         */[Subject]/EPI/RP*.mat
+%     • EPI images exist in per-run folders:
+%         */[Subject]/EPI/2_Temporal/R*/<*.nii>
+%     • Run indices encoded in EventSpec_R*.mat match those in the EPI
+%       run folders; the function checks and errors if mismatched.
+%
+%   Model details:
+%     • Units: scans (TR = 2.2 s)
+%     • Basis functions: canonical HRF, no time/dispersion derivatives
+%     • Microtime resolution: 66
+%     • Global normalisation: none
+%     • Masking: implicit, threshold = 0; no explicit mask
+%     • High-pass filter: 128 s
+%     • Serial correlations: AR(1)
+%     • Estimation method: Classical (ReML)
+%
+%   Outputs (per subject × stimulus):
+%     • SPM.mat and parameter estimate images (beta_*.nii) saved to:
+%         */[Subject]/Analysis/Alpha00/i*/
+%
+%   Notes:
+%     • Residual images are not written (write_residuals = 0).
+%     • No contrasts are specified here.
 
-dataDir = dir(['..',filesep,'..',filesep,'Data']);
-dataDir = dataDir(1).folder;
+% Set some constants
+tr = 2.2;
+stimIds = (0:5)';
+dirs.Data = ['..',filesep,'..',filesep,'Data'];
+subjectIds = getSubjectIds(G);
 
-subjectIds = groupFunc(); %this will be e.g. getG1()
-nSubs = numel(subjectIds);
+for iSubject = 1:numel(subjectIds)
 
+    % Set required directory paths
+    cId = subjectIds{iSubject};
+    dirs.Subject = [dirs.Data,filesep,cId];
+    dirs.EPI = [dirs.Subject,filesep,'EPI'];
+    dirs.Y = [dirs.EPI,filesep,'2_Temporal'];
+    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
 
-for ii=1:nSubs
-    subDir = [dataDir,filesep,subjectIds{ii}];
-    anlDir = [subDir,filesep,'Analysis'];
-    alphDir = [anlDir,'Alpha00'];
-    epiDir = [subDir,filesep,'EPI'];
-    epi2Dir = [epiDir,filesep,'2_Temporal'];
-    runList  = dir([epi2Dir,filesep,'R*']);
-    runList = unique([runList.name]');
-    runList = runList(1:end-1);
-    runIds = (arrayfun(@(x) str2double(x),runList))';
-    nRuns = numel(runList);
+    % Set the filenames of the realignment parameters
+    rpsFns = getRpsFns(dirs.EPI);
 
-    %% EPIs
-    FilePath_EPIs = cell(nRuns,1);
-    for iRun = runIds
-        epiFileList = dir([epi2Dir,filesep,'R',int2str(runIds(iRun)),'au_*.nii']);
-        FilePath_EPIs{iRun} = cellfun(...
-            @(x,y)[x,filesep,y],...
-            {epiFileList.folder}',...
-            {epiFileList.name}',...
-            'UniformOutput',false);
+    % Set the EPI filenames
+    epiFns = getEpiFns(dirs.Y);
+
+    % Loop through stimIds to estimate
+    for stimId = stimIds'
+        dirs.Output = sprintf('%s%si%i',dirs.Alpha00,filesep,stimId);
+        estimL1(tr,dirs.Output,epiFns,rpsFns);
     end
-
-    %% RPS
-    rpFileList = dir([epiDir,filesep,'RP*.mat']);
-    FileName_RPs = cellfun(...
-        @(x,y)[x,filesep,y],...
-        {rpFileList.folder}',...
-        {rpFileList.name}',...
-        'UniformOutput',false);
-
-    %set TR
-    for iRun = runIds
-        %% Stim loop
-        for stimId = 0:5
-            specAndEstim(alphDir,FilePath_EPIs{iRun},runIds(iRun),stimId);
-        end
-    end
-
 end
-
 return
 
-function [] = specAndEstim(alphDir,FilePath_EPIs,runId,stimId)
-TR = 2.2;
+function [fileList] = getRpsFns(path2data)
+fullpath = @(s)[s.folder,filesep,s.name];
+fileList  = dir([path2data,filesep,'RP*.mat']);
+fileList = arrayfun(fullpath,fileList,'UniformOutput',false);
+return
 
-outDir = [alphDir,filesep,sprintf('i%i_R%i',stimId,runId)];
-spmMatFile = [outDir,filesep,'SPM.mat'];
-eventSpec = dir([outDir,filesep,'EventSpec.mat']);
-eventSpec = [eventSpec.folder,filesep,eventSpec.name];
+function [epiFns] = getEpiFns(path2data)
+fullpath = @(s)[s.folder,filesep,s.name];
+runList  = dir([path2data,filesep,'R*']);
+runList = arrayfun(fullpath,runList,'UniformOutput',false);
+epiFns = cell(size(runList));
+for iRun = 1:numel(runList)
+    temp = dir([runList{iRun},filesep,'*.nii']);
+    epiFns{iRun} = arrayfun(fullpath,temp,'UniformOutput',false);
+end
+return
 
-SpmBatch = [{},{}];
-SpmBatch{1}.spm.stats.fmri_spec.dir = {outDir};
-SpmBatch{1}.spm.stats.fmri_spec.timing.units = 'scans';
-SpmBatch{1}.spm.stats.fmri_spec.timing.RT = TR;
-SpmBatch{1}.spm.stats.fmri_spec.timing.fmri_t = 66; % aquisition times were start of each aquistion not halfway through so we need double the resolution to specfiy reference slice's point
-SpmBatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 33 ; %....and 12
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).scans = FilePath_EPIs;
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).cond = struct(...
-    'name', {}, ... %THIS IS JUST TO MAKE THE GUI HAPPY?
-    'onset', {}, ...
-    'duration', {}, ...
-    'tmod', {}, ...
-    'pmod', {}, ...
-    'orth', {});
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).multi = eventSpec; %THEN PUT IN THE ACTUAL VALUES HERE
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).regress = struct( ...
-    'name', {}, 'val', {}); %THIS IS JUST TO MAKE THE GUI HAPPY
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).multi_reg = FileName_RPs;  %THEN PUT IN THE ACTUAL VALUES HERE
-SpmBatch{1}.spm.stats.fmri_spec.sess(1).hpf = 128; %defaults
+function [] = estimL1(tr,outDir,epiFns,rpsFns)
 
-SpmBatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
-SpmBatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0]; % Do we not use time/dispersion derivatives in the first level model because we're not estimating the patterns at a group level?
-SpmBatch{1}.spm.stats.fmri_spec.volt = 1; %(Do we not use voltera/2nd order interaction of HRFs because our smallest stim seperation time is 1s which is > 800ms at which nonlinearity has been observed?
-SpmBatch{1}.spm.stats.fmri_spec.global = 'None';
-SpmBatch{1}.spm.stats.fmri_spec.mthresh = 0.8;
-SpmBatch{1}.spm.stats.fmri_spec.mask = {''}; %MAKE DECISION ABOUT YOUR MASK VS SPM MASK
-SpmBatch{1}.spm.stats.fmri_spec.cvi = 'AR(1)'; %default
+% Set some constants
+fullpath = @(s)[s.folder,filesep,s.name];
+empty0 = struct(...
+    'name',{},'onset',{},'duration',{},'tmod',{},'pmod',{},'orth',{});
+empty1 = struct('name',{},'val',{});
 
-%% TO DO find out if this way of specifying batches works?
-%Estimate the model once the spmMatFile is made
-%the batch numbers are such that for someone with 5 runs, 1-30 is the model
-%specification job for producing the spm.mat files and then
-%31-60 is the estimation jobs for each of the models.
-SpmBatch{2}.spm.stats.fmri_est.spmmat = {spmMatFile};
-SpmBatch{2}.spm.stats.fmri_est.write_residuals = 0;
-SpmBatch{2}.spm.stats.fmri_est.method.Classical = 1;
+% Set the event spec file names
+eventSpecs = dir([outDir,filesep,'EventSpec_R*.mat']);
+eventSpecs = arrayfun(fullpath,eventSpecs,'UniformOutput',false);
 
-%%
+%% Check there is no mismatch in the RunIds ...
+% ... between epiFns and eventSpecs (rpsFns may be misaligned by design)
+runIds.eventSpecs = cellfun(...
+    @(s,ii)str2double(s(ii)),...
+    eventSpecs,num2cell(cellfun(@(ii)ii+2,strfind(eventSpecs,'_R'))));
+firstNames = cellfun(@(c)c{1},epiFns,'UniformOutput',false);
+runIds.epiFns = cellfun(...
+    @(s,ii)str2double(s(ii)),...
+    firstNames,num2cell(cellfun(@(ii)ii+1,strfind(firstNames,'R'))));
+if  var([numel(eventSpecs);numel(rpsFns);numel(eventSpecs)]) ~= 0
+    error('Mismatching runs between epiFns, rpsFns, and/or eventSpecs.');
+end
+if ~all(runIds.eventSpecs==runIds.epiFns)
+    error('Mismatch between Run IDs!');
+end
+
+%% Job definition: Specify
+SpmJob{1}.spm.stats.fmri_spec.dir = {outDir};
+SpmJob{1}.spm.stats.fmri_spec.timing.units = 'scans';
+SpmJob{1}.spm.stats.fmri_spec.timing.RT = tr;
+SpmJob{1}.spm.stats.fmri_spec.timing.fmri_t = 66;
+SpmJob{1}.spm.stats.fmri_spec.timing.fmri_t0 = 33;
+
+% Run loop
+for iRun = 1:numel(eventSpecs)
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).scans = epiFns{iRun};
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).cond = empty0;
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).multi = eventSpecs(iRun);
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).regress = empty1;
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).multi_reg = rpsFns(iRun);
+    SpmJob{1}.spm.stats.fmri_spec.sess(iRun).hpf = 128;
+end
+
+% No factorial structure
+SpmJob{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
+
+% No time or dispersion derivatives
+SpmJob{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
+
+% No Voltera interaction or 2nd order effect for the HRFs
+SpmJob{1}.spm.stats.fmri_spec.volt = 1;
+
+% No per-voxel scaling
+SpmJob{1}.spm.stats.fmri_spec.global = 'None';
+
+% I think a mask threshold of 0 corresponds to mu/8 ...
+% ... (where mu is the grand mean across all images)
+SpmJob{1}.spm.stats.fmri_spec.mthresh = 0;
+
+% No explicit masking
+SpmJob{1}.spm.stats.fmri_spec.mask = {''};
+
+% AR(1)
+SpmJob{1}.spm.stats.fmri_spec.cvi = 'AR(1)';
+
+%% Job definition: Estimate
+SpmJob{2}.spm.stats.fmri_est.spmmat = {[outDir,filesep,'SPM.mat']};
+SpmJob{2}.spm.stats.fmri_est.write_residuals = 0;
+SpmJob{2}.spm.stats.fmri_est.method.Classical = 1;
+
+%% Job execution
 spm_jobman('initcfg');
-spm_jobman('run',SpmBatch);
+spm_jobman('run',SpmJob);
 return

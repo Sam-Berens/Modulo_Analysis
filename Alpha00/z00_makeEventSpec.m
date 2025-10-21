@@ -52,7 +52,7 @@ for iSubject = 1:numel(subjectIds)
     % Loop through stimuli and runs
     TaskIO = STIO.TaskIO;
     runIds = unique(TaskIO.iRun)';
-    for iStim = stimIds
+    for iStim = stimIds'
         signalName = sprintf('i%i',iStim);
 
         % Set and create the output directory (if needed)
