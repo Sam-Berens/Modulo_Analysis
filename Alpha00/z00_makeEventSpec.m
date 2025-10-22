@@ -23,7 +23,7 @@ function [] = z00_makeEventSpec(G)
 %
 %   Outputs:
 %     EventSpec_R*.mat files are saved in:
-%       */[Subject]/Analysis/Alpha00/i*/EventSpec_R*.mat
+%       */[SubjectId]/Analysis/Alpha00/i*/EventSpec_R*.mat
 
 % Set some constants
 tr = 2.2;

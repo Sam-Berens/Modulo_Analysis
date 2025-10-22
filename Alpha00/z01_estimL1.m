@@ -10,11 +10,11 @@ function [] = z01_estimL1(G)
 %
 %   Requirements / Assumptions:
 %     • Event specification files exist at:
-%         */[Subject]/Analysis/Alpha00/i*/EventSpec_R*.mat
+%         */[SubjectId]/Analysis/Alpha00/i*/EventSpec_R*.mat
 %     • Realignment parameter files exist at:
-%         */[Subject]/EPI/RP*.mat
+%         */[SubjectId]/EPI/RP*.mat
 %     • EPI images exist in per-run folders:
-%         */[Subject]/EPI/2_Temporal/R*/<*.nii>
+%         */[SubjectId]/EPI/2_Temporal/R*/<*.nii>
 %     • Run indices encoded in EventSpec_R*.mat match those in the EPI
 %       run folders; the function checks and errors if mismatched.
 %
@@ -139,8 +139,7 @@ SpmJob{1}.spm.stats.fmri_spec.volt = 1;
 % No per-voxel scaling
 SpmJob{1}.spm.stats.fmri_spec.global = 'None';
 
-% I think a mask threshold of 0 corresponds to mu/8 ...
-% ... (where mu is the grand mean across all images)
+% No implicit masking
 SpmJob{1}.spm.stats.fmri_spec.mthresh = 0;
 
 % No explicit masking
