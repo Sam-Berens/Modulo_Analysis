@@ -10,7 +10,7 @@ if ~exist(rpsFolder,'dir')
     mkdir(rpsFolder);
 end
 
-censorThresh = 0.9; % mm FWD
+censorThresh = 0.5; % mm FWD
 
 rpList = dir([epiDir,filesep,'*.txt']);
 nRuns = numel(rpList);
