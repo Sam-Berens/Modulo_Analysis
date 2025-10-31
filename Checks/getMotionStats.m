@@ -1,6 +1,6 @@
 function [MotionStats] = getMotionStats()
 
-censorThresh = 0.9; % mm FWD
+censorThresh = 0.5; % mm FWD
 MotionStats = struct;
 
 % Set dataDir and subjList

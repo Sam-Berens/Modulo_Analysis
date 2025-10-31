@@ -1,6 +1,6 @@
 function [] = plotMotionStats()
 
-censorThresh = 0.9;
+censorThresh = 0.5;
 
 % Set dataDir and subjList
 dataList = dir(['..',filesep,'..',filesep,'Data']);
