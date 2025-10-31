@@ -1,4 +1,4 @@
-function [] = z13_writeEpiMask(subjectId)
+function [] = z13_WriteEpiMask(subjectId)
 [V,Y] = computeMask(subjectId);
 spm_write_vol(V,Y);
 return
