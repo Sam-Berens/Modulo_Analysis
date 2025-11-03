@@ -42,9 +42,9 @@ for iR = 1:nRuns
     end
 
     % Construct R
-    R = [RPs,dRPs,fwd];
+    R = [RPs,dRPs];
     R = zscore(R,[],1);
-    R = [R,censors];
+    R = [R,censors]; %#ok<AGROW>
 
     % Save R
     save(sprintf('%s%sRP%i.mat',epiDir,filesep,iR),'R');
