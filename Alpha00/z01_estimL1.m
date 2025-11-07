@@ -142,8 +142,10 @@ SpmJob{1}.spm.stats.fmri_spec.global = 'None';
 % No implicit masking
 SpmJob{1}.spm.stats.fmri_spec.mthresh = 0;
 
-% No explicit masking
-SpmJob{1}.spm.stats.fmri_spec.mask = {''};
+% Explicit masking
+%load in custom statistical mask
+mask = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
+SpmJob{1}.spm.stats.fmri_spec.mask = {mask};
 
 % AR(1)
 SpmJob{1}.spm.stats.fmri_spec.cvi = 'AR(1)';
