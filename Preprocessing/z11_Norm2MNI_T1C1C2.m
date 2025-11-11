@@ -1,5 +1,4 @@
 function [] = z11_Norm2MNI_T1C1C2(G)
-%%% NOTE THIS NEEDS RUNNING AGAIN. IT WAS RUN ON THE RC IMAGES IN ERROR
 
 % Get the subjectIds
 subjectIds = getSubjectIds(G);

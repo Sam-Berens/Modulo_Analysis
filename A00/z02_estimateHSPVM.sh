@@ -22,7 +22,7 @@ DATA_DIR="${DATA_DIR:-../../Data}"
 HSPVM_BIN="${HSPVM_BIN:-./hspvm}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
 NUM_THREADS="${NUM_THREADS:-8}"
-INITS="${INITS:-./Inits/Init.json}"
+INITS="${INITS:-./Inits/vonMises/Init.json}"
 DRY_RUN="${DRY_RUN:-0}"
 OVERWRITE="${OVERWRITE:-0}"
 

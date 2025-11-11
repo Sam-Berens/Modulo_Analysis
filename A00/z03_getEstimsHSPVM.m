@@ -46,7 +46,7 @@ subjectIds = categorical(subjectIds);
 for iSubject = 1:numel(subjectIds)
     sId = char(subjectIds(iSubject));
     inFn = [dirPaths.IO(sId),'InputData.json'];
-    outList = dir([dirPaths.IO(sId),'Output_*.csv']);
+    outList = dir([dirPaths.IO(sId),'vonMises',filesep,'Output_*.csv']);
 
     % Set the domain
     inData = jsondecode(fileread(inFn));

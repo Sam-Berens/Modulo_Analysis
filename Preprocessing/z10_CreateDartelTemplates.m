@@ -92,15 +92,18 @@ for iSubject = 1:nSubjects
     pathSubject = [pathData,filesep,subjectIds{iSubject}];
     pathStructural = [pathSubject,filesep,'Structural'];
     pathFlowFields = [pathStructural,filesep,G];
+    dirsTarget = dir([pathStructural,filesep,'u_rc1_*.nii']);
+    targetFile = [pathStructural,filesep,dirsTarget.name];
 
     % Flow-fields
-    movefile([pathStructural,filesep,'u_rc1_*.nii'],...
+    movefile(targetFile,...
         pathFlowFields);
 
     % Templates
     dirTemplates = dir([pathStructural,filesep,'*_Template_*']);
     if numel(dirTemplates) > 0 && ~movedTemplate
-        move([pathStructural,filesep,'*_Template_*'],pathTemplates);
+        targetFiles = cellfun(@(x) [x.folder,filesep,x.name],dirTemplates);
+        cellfun(@(x) move(x,pathTemplates),targetFiles);
         movedTemplate = true;
     elseif numel(dirTemplates) > 0
         error('Something bad has happened!');

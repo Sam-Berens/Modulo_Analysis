@@ -50,6 +50,7 @@ for iSubject = 1:numel(subjectIds)
     dirs.EPI = [dirs.Subject,filesep,'EPI'];
     dirs.Y = [dirs.EPI,filesep,'2_Temporal'];
     dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
+    mask = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
 
     % Set the filenames of the realignment parameters
     rpsFns = getRpsFns(dirs.EPI);
@@ -60,7 +61,7 @@ for iSubject = 1:numel(subjectIds)
     % Loop through stimIds to estimate
     for stimId = stimIds'
         dirs.Output = sprintf('%s%si%i',dirs.Alpha00,filesep,stimId);
-        estimL1(tr,dirs.Output,epiFns,rpsFns);
+        estimL1(tr,dirs.Output,epiFns,rpsFns,mask);
     end
 end
 return
@@ -68,12 +69,16 @@ return
 function [fileList] = getRpsFns(path2data)
 fullpath = @(s)[s.folder,filesep,s.name];
 fileList  = dir([path2data,filesep,'RP*.mat']);
+[~,ord] = sort({fileList.name});
+fileList = fileList(ord);
 fileList = arrayfun(fullpath,fileList,'UniformOutput',false);
 return
 
 function [epiFns] = getEpiFns(path2data)
 fullpath = @(s)[s.folder,filesep,s.name];
 runList  = dir([path2data,filesep,'R*']);
+[~,ord]  = sort({runList.name});
+runList  = runList(ord);
 runList = arrayfun(fullpath,runList,'UniformOutput',false);
 epiFns = cell(size(runList));
 for iRun = 1:numel(runList)
@@ -82,7 +87,7 @@ for iRun = 1:numel(runList)
 end
 return
 
-function [] = estimL1(tr,outDir,epiFns,rpsFns)
+function [] = estimL1(tr,outDir,epiFns,rpsFns,mask)
 
 % Set some constants
 fullpath = @(s)[s.folder,filesep,s.name];
@@ -92,6 +97,8 @@ empty1 = struct('name',{},'val',{});
 
 % Set the event spec file names
 eventSpecs = dir([outDir,filesep,'EventSpec_R*.mat']);
+[~,ord]  = sort({eventSpecs.name});
+eventSpecs  = eventSpecs(ord);
 eventSpecs = arrayfun(fullpath,eventSpecs,'UniformOutput',false);
 
 %% Check there is no mismatch in the RunIds ...
@@ -103,7 +110,7 @@ firstNames = cellfun(@(c)c{1},epiFns,'UniformOutput',false);
 runIds.epiFns = cellfun(...
     @(s,ii)str2double(s(ii)),...
     firstNames,num2cell(cellfun(@(ii)ii+1,strfind(firstNames,'R'))));
-if  var([numel(eventSpecs);numel(rpsFns);numel(eventSpecs)]) ~= 0
+if  var([numel(epiFns);numel(rpsFns);numel(eventSpecs)]) ~= 0
     error('Mismatching runs between epiFns, rpsFns, and/or eventSpecs.');
 end
 if ~all(runIds.eventSpecs==runIds.epiFns)
@@ -144,7 +151,6 @@ SpmJob{1}.spm.stats.fmri_spec.mthresh = 0;
 
 % Explicit masking
 %load in custom statistical mask
-mask = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
 SpmJob{1}.spm.stats.fmri_spec.mask = {mask};
 
 % AR(1)

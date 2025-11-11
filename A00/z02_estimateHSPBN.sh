@@ -22,7 +22,7 @@ DATA_DIR="${DATA_DIR:-../../Data}"
 HSPBN_BIN="${HSPBN_BIN:-./hspbn}"
 NUM_CHAINS="${NUM_CHAINS:-8}"
 NUM_THREADS="${NUM_THREADS:-8}"
-INITS="${INITS:-./Inits/Init.json}"
+INITS="${INITS:-./Inits/Binomial/Init.json}"
 DRY_RUN="${DRY_RUN:-0}"
 OVERWRITE="${OVERWRITE:-0}"
 
