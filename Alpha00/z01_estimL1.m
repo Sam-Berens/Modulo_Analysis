@@ -60,7 +60,7 @@ for iSubject = 1:numel(subjectIds)
     % Loop through stimIds to estimate
     for stimId = stimIds'
         dirs.Output = sprintf('%s%si%i',dirs.Alpha00,filesep,stimId);
-        estimL1(tr,dirs.Output,epiFns,rpsFns,mask);
+        estimL1(tr,dirs.Output,epiFns,rpsFns);
     end
 end
 return
@@ -86,7 +86,7 @@ for iRun = 1:numel(runList)
 end
 return
 
-function [] = estimL1(tr,outDir,epiFns,rpsFns,mask)
+function [] = estimL1(tr,outDir,epiFns,rpsFns)
 
 % Set some constants
 fullpath = @(s)[s.folder,filesep,s.name];
