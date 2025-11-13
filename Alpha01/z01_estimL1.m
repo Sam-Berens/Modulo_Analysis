@@ -39,6 +39,7 @@ function [] = z01_estimL1(G)
 % Set some constants
 tr = 2.2;
 stimIds = (0:5)';
+positions = 'ab';
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 subjectIds = getSubjectIds(G);
 
@@ -49,7 +50,7 @@ for iSubject = 1:numel(subjectIds)
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.EPI = [dirs.Subject,filesep,'EPI'];
     dirs.Y = [dirs.EPI,filesep,'2_Temporal'];
-    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
+    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 
     % Set the filenames of the realignment parameters
     rpsFns = getRpsFns(dirs.EPI);
@@ -59,8 +60,11 @@ for iSubject = 1:numel(subjectIds)
 
     % Loop through stimIds to estimate
     for stimId = stimIds'
-        dirs.Output = sprintf('%s%si%i',dirs.Alpha00,filesep,stimId);
+        for iPos = 1:2
+        cPos = positions(iPos);
+        dirs.Output = sprintf('%s%s%s%i',dirs.Alpha00,filesep,cPos,stimId);
         estimL1(tr,dirs.Output,epiFns,rpsFns,mask);
+        end
     end
 end
 return

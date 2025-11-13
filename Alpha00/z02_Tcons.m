@@ -1,4 +1,4 @@
-function [] = z02_makeTs(G)
+function [] = z02_Tcons(G)
 subjectIds = getSubjectIds(G);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 for iSubject=1:numel(subjectIds)
