@@ -153,7 +153,7 @@ SpmJob{1}.spm.stats.fmri_spec.global = 'None';
 SpmJob{1}.spm.stats.fmri_spec.mthresh = 0;
 
 % No explicit masking
-SpmJob{1}.spm.stats.fmri_spec.mask = {};
+SpmJob{1}.spm.stats.fmri_spec.mask = {''};
 
 % AR(1)
 SpmJob{1}.spm.stats.fmri_spec.cvi = 'AR(1)';
