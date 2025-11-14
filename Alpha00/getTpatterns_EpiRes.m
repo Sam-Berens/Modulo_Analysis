@@ -1,22 +1,11 @@
-function [Data] = sampleTs(subjectId,roiPath,m)
-
-
-%for now make this function just be method 2
-
-%later make a version that does method 1 but we will need the indices from
-%which things were sampled as an output too (this is important for
-%searchlight)
-
-dirs.Subject = [dirs.Data,filesep,subjectId];
-dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
-dirs.EPI = [dirs.Subject,filesep,'EPI'];
-maskPath = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
+function [Data,isEpiInRoi] = getTpatterns_EpiRes(G,subjectId,roiId,dirs) %remberer you need to feed it special formatted ts
 
 %% Load in volume headers and data
-mask.V = spm_vol(maskPath);
+mask.V = spm_vol(dirs.maskPath);
 mask.M = spm_read_vols(mask.V);
+%%Step where you convert roiId into and actual roi
+roiPath = getNativeRoiPath(G,subjectId,roiId);
 roi.V = spm_vol(roiPath);
-roi.M = spm_read_vols(roi.V);
 
 %loop through regressors to build a t-statistic volume which is shaped with
 %stimulus in the 4th dim instead of time
@@ -27,60 +16,11 @@ for ii=0:5
     tFp = [dirs.Alpha00 ,filesep,rgName,filesep,'spmT_0001.nii'];
     ts2Collect{(ii+1),1} = tFp;
 end
-
-t.V = spm_vol(ts2Collect);
-
-%m = the interpolation method you want to use for sampling
-if strcmp(m,'push')
-    [Data] = interp1(roi,t,mask);
-elseif strcmp(m,'pull')
-    [Data] = interp2(roi,ts2Collect,mask);
-end
-
-%Had a check to see what it looks like and looks ok but very patchy?
-%check if thats normal
-% test = nan(size(roi.M));
-% test(I) = Data(:,1);
-return 
-
-
-
-
-function [Data] = interp1(roi,t,mask)
-%% Find the mm coords (Xyz) for all voxels in ROI
-S = roi.M > 0.5;
-I = find(S);
-[x,y,z] = ind2sub(size(S),I);
-Xyz = [x,y,z,ones(size(I))]';
-Xyz = roi.V.mat*Xyz;
-%this makes the voxel cordinates where the roi is, in mm space
-Vx = t.V{1,1}.mat\Xyz;
-
-%sample the epiMask in roi space to check coverage
-Coverage = ...
-    spm_sample_vol(mask.V,...
-    Vx(1,:),Vx(2,:),Vx(3,:),-5);
-
-%% Sample from t Statistics over regressors using Xyz
-nStims = 6;
-Data = nan(nStims,numel(I));
-for iStim = 1:nStims
-    cTs = ...
-        spm_sample_vol(t.V{iStim,1},...
-        Vx(1,:),Vx(2,:),Vx(3,:),-5);
-    %remove any values outside the epiMask
-    Data(iStim,:) = cTs(mask.M);
-end
-
-%% Censor Data with Coverage
-Data = Data(:,Coverage>0.5);
-return
-
-function [Data] = interp2(roi,ts2Collect,mask)
-%% Find the mm coords (Xyz) for all voxels in EPI
-%put V into a format such that the resulting M will be x by y by z by
-%condition
+%put input to spm_vol into a format such that the resulting...
+% M when its read will be x by y by z by condition
 ts2Collect = permute(ts2Collect ,[2,3,4,1]);
+
+%% Find the mm coords (Xyz) for all voxels in EPI
 t.V = spm_vol(ts2Collect);
 %this should also have 4th dim being condition
 t.M = cellfun(@(s)spm_read_vols(s),t.V,'UniformOutput',false);
@@ -95,9 +35,9 @@ maxLinInd = sz(1) * sz(2) *sz(3);
 Xyz = [x;y;z;ones(1,maxLinInd)];
 Xyz = t.V{1,1,1,1}.mat*Xyz; %doesnt matter which condition we get the .mat from
 
-nStims = 6;
 
 %% Sample from t Statistics over regressors using Xyz
+nStims = 6;
 Data = cell(nStims,1);
 
 %this step says take the xyz coords of voxels(of EPI) ...
