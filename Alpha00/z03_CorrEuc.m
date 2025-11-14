@@ -1,4 +1,4 @@
-function [DataTable] = z03_CorrEuc(G)
+function [DataTable] = z03_CorrEuc(G,m)
 
 subjectIds = getSubjectIds(G);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
@@ -7,20 +7,24 @@ lower = tril(true(6),-1);
 
 for iSubject=1:numel(subjectIds)
     cId = subjectIds{iSubject};
-    dirs.Subject = [dirs.Data,filesep,cId];
-    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
-    %% Get roi paths 
+    %% Get roi paths
+
+%% call the NativeROI function so that everything named legibaly 
+% DO IT IN one roi only and then stack the tables in another higher layer
+
     [roiPaths] = getROIpaths(dirs, G);
     for iRoi = 1:numel(roiPaths)
-    %% Sample t-stat data using mask ROI coordinates
-    data.M = sampleTs(dirs, roiPaths{iRoi});
-    %reminder that this M is (nStims,nVoxels)
-    % Compute pairwise Euclidian distances across conditions
-    D = pdist(data.M,'euclidean');
-    D = squareform(D);
-    r = corr(H(lower),D(lower),'Type','Kendall');
-    z = atanh(r);
-    DataTable(iSubject,1).(roiName) = z;
+        [~,roiName] = fileparts(roiPaths{iRoi});
+        roiName = matlab.lang.makeValidName(roiName);
+        %% Sample t-stat data using mask ROI coordinates
+        Data = sampleTs(cid, roiPaths{iRoi},maskPath,m);
+        %reminder that this M is (nStims,nVoxels)
+        % Compute pairwise Euclidian distances across conditions
+        D = pdist(Data,'euclidean');
+        D = squareform(D);
+        r = corr(H(lower),D(lower),'Type','Kendall');
+        z = atanh(r);
+        DataTable(iSubject,1).(roiName) = z;
     end
 
     DataTable = struct2table(DataTable,'RowNames',subjectIds);
