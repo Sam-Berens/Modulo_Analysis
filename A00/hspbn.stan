@@ -114,10 +114,10 @@ model {
   // Normal prior for beta1.
   // Half-normal prior for beta2.
   for (iType in 1 : nTypes) {
-    alpha1[iType] ~ logistic(0, 1);
-    alpha2[iType] ~ normal(1, 0.05) T[0,];
-    beta1[iType] ~ normal(0, 0.1);
-    beta2[iType] ~ normal(0.1, 0.005) T[0,];
+    alpha1[iType] ~ logistic(0, 0.2); 
+    alpha2[iType] ~ normal(1, 0.02) T[0,];
+    beta1[iType] ~ normal(0, 0.05);
+    beta2[iType] ~ normal(0.05, 0.001) T[0,];
   }
   
   // Parameter distributions for each pair type:
