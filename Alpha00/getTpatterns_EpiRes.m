@@ -1,4 +1,4 @@
-function [Data,isEpiInRoi] = getTpatterns_EpiRes(G,subjectId,roiId,dirs) %remberer you need to feed it special formatted ts
+function [Data,isEpiInRoi] = getTpatterns_EpiRes(G,subjectId,roiId,dirs) 
 
 %% Load in volume headers and data
 mask.V = spm_vol(dirs.maskPath);

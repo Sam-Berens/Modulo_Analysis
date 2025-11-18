@@ -4,14 +4,14 @@ subjectIds = getSubjectIds(G);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 
 %% Loop through rois
-roiNames=['lHip','rHip','lEnt','rEnt','lMPFC','lVis','rVis'];
-roiIds = ['lHip','rHip','rEnt','082','187','001','101'];
+roiNames={'lHip','rHip','lEnt','rEnt','lMPFC','lVis','rVis'};
+roiIds = ["lHi";"rHi";"rEnt";"082";"187";"001";"101"];
 
 %check this is the way im supposed to stack them
 patternSim = nan(6,6,numel(subjectIds),numel(roiIds));
 for ii=1:numel(roiIds)
 
-    [zTemplate,patternSim(:,:,:,ii)] = getPatternSim(G,roiIds(ii));
+    [zTemplate,patternSim(:,:,:,ii)] = getPatternSim(G,roiIds(ii,1));
 
     %meant to arrange stuff such that you have a model object which is a struct
     %with rows for roi and fields incld name of roi, estimated result of

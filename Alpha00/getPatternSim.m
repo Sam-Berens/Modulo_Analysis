@@ -7,7 +7,8 @@ subjectIds = getSubjectIds(G);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 H = (3-min(cat(3,mod((0:5)'-(0:5),6),mod((0:5)-(0:5)',6)),[],3))./3;
 lower = tril(true(6),-1);
-
+patternSim = nan([6,6,numel(subjectIds)]);
+zTemplate = nan(numel(subjectIds),1);
 for iSubject=1:numel(subjectIds)
     cId = subjectIds{iSubject};
     %% prep for getTpatterns
@@ -23,8 +24,9 @@ for iSubject=1:numel(subjectIds)
     %reminder that this M is (nStims,nVoxels)
     % Compute pairwise Euclidian distances across conditions
     D = pdist(Data,'euclidean');
-    patternSim(:,:,iSubject) = squareform(D); % TO DO - check this is in the right form - i think it has zeros in the diagonal but mb we want to remove them?
+    D = squareform(D); % TO DO - check this is in the right form - i think it has zeros in the diagonal but mb we want to remove them?
     r = corr(H(lower),D(lower),'Type','Kendall'); %this is the type of corr, between this and pearsons
+    patternSim(:,:,iSubject) = D;
     z = atanh(r);
     zTemplate(iSubject,1) = z;
 end
