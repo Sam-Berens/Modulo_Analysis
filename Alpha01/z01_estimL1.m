@@ -50,7 +50,7 @@ for iSubject = 1:numel(subjectIds)
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.EPI = [dirs.Subject,filesep,'EPI'];
     dirs.Y = [dirs.EPI,filesep,'2_Temporal'];
-    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
+    dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 
     % Set the filenames of the realignment parameters
     rpsFns = getRpsFns(dirs.EPI);
@@ -62,7 +62,7 @@ for iSubject = 1:numel(subjectIds)
     for stimId = stimIds'
         for iPos = 1:2
         cPos = positions(iPos);
-        dirs.Output = sprintf('%s%s%s%i',dirs.Alpha00,filesep,cPos,stimId);
+        dirs.Output = sprintf('%s%s%s%i',dirs.Alpha01,filesep,cPos,stimId);
         estimL1(tr,dirs.Output,epiFns,rpsFns);
         end
     end

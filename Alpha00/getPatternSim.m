@@ -4,6 +4,7 @@ function [zTemplate,patternSim] = getPatternSim(G,roiId)
 % patternSim = [6,6,nSubjects];
 
 subjectIds = getSubjectIds(G);
+[~,order] = sort(subjectIds);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 H = (3-min(cat(3,mod((0:5)'-(0:5),6),mod((0:5)-(0:5)',6)),[],3))./3;
 lower = tril(true(6),-1);
@@ -30,4 +31,7 @@ for iSubject=1:numel(subjectIds)
     z = atanh(r);
     zTemplate(iSubject,1) = z;
 end
+%make sure they are ordered the same as other subjectId ordered arrays
+patternSim = patternSim(:,:,order);
+zTemplate = zTemplate(order,1);
 return
