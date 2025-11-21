@@ -13,6 +13,11 @@ functions {
     }
     return idx;
   }
+
+  // softmin: smooth alternative to fmin
+  real softmin(real a, real b, real k) {
+    return -log_sum_exp(-k * a, -k * b) / k;
+  }
 }
 data {
   // nTrials: Number of trials.
@@ -72,6 +77,7 @@ transformed data {
     }
     nTry[iTrial] = nk;
   }
+
 }
 parameters {
   // alpha1 and alpha2:
@@ -101,25 +107,24 @@ transformed parameters {
   vector[nPairs] b;
   for (iPair in 1 : nPairs) {
     int typeidx = id2type[iPair];
-    au[iPair] = alpha1[typeidx] + (zau[iPair]*alpha2[typeidx]);
+    au[iPair] = alpha1[typeidx] + (zau[iPair]*alpha2[typeidx]); 
     b[iPair] = beta1[typeidx] + (zb[iPair]*beta2[typeidx]);
   }
 
   // a: Bounded and scaled learning offset parameter (one per pair).
-   vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX;
+   vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX; //maybe this shouldnt be constrained to maxX - it would be like saying, they didnt get to the shoulder of learning yet?
 }
 model {
   // Logistic prior for alpha1.
   // Half-normal prior for alpha2.
   // Normal prior for beta1.
   // Half-normal prior for beta2.
-  for (iType in 1 : nTypes) {
-    alpha1[iType] ~ logistic(0, 0.2); 
+for (iType in 1 : nTypes) {
+    alpha1[iType] ~ normal(0, 0.5);
     alpha2[iType] ~ normal(1, 0.02) T[0,];
     beta1[iType] ~ normal(0, 0.05);
     beta2[iType] ~ normal(0.05, 0.001) T[0,];
   }
-  
   // Parameter distributions for each pair type:
   // Normal(0,1) for zau;
   // Normal(0,1) for zb;
@@ -157,12 +162,14 @@ model {
     for (k in 1 : nTry[iTrial]) {
       rlpmf[k] = lpmf[Yidx[iTrial, k]];
     }
-    
+
     // Update the log-likelihood for the current trial.
+    //TO DO - apparently in the new model the cummaltive prs can approach 1 very quickly?
     real cumsum_lq = negative_infinity();
     lq[iTrial] = 0;
     for (k in 1 : nTry[iTrial]) {
-      cumsum_lq = fmin(cumsum_lq, -1e-15); // Protection
+      //cumsum_lq = fmin(cumsum_lq, -1e-15); // Protection 
+      cumsum_lq = softmin(cumsum_lq, -1e-15, 50);
       lq[iTrial] += rlpmf[k] - log1m_exp(cumsum_lq);
       cumsum_lq = log_sum_exp(cumsum_lq, rlpmf[k]); 
     }

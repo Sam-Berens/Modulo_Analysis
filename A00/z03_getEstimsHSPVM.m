@@ -59,7 +59,7 @@ for iSubject = 1:numel(subjectIds)
     plotStanFit(P,dirPaths.groupFigs);
 
     % Extract proficiency
-    Q = expractProfic(sId,P,maxX);
+    Q = extractProfic(sId,P,maxX);
 
     % Extract estimates
     E = extractEstims(sId,P,param,maxX);
@@ -137,7 +137,7 @@ S = table(repmat(categorical({subjectId}),size(StanOut,1),1),...
 StanOut = [S,StanOut];
 return
 
-function [Profic] = expractProfic(subjectId,P,maxX)
+function [Profic] = extractProfic(subjectId,P,maxX)
 theta = (0:5).*(pi/3);
 [a,b] =  ind2sub([6,6],1:(6^2));
 names = cellfun(@(i1,i2)sprintf('%i_%i',i1,i2),...
