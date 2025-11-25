@@ -1,5 +1,5 @@
 
-function [DesignMat]=getDesMat(G)
+function [DesignMat]=getDesignMat(G)
 %finds the model-predicted n feedback events for r=0.5
 
 dirs.home = pwd;

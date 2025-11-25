@@ -15,6 +15,7 @@ end
 for ii = 1:36
     param = [param,string(sprintf('a_%i',ii))];
     param = [param,string(sprintf('b_%i',ii))];
+    param = [param,string(sprintf('c_%i',ii))];
 end
 
 %% Make dirPaths structure
@@ -55,8 +56,10 @@ for iSubject = 1:numel(subjectIds)
     % Get posterior samples
     P = readCSVs(sId,outList);
 
+    P = getMemPoints(P);
+
     % Plot the postrior samples
-    plotStanFit(P,dirPaths.groupFigs);
+    % plotStanFit(P,dirPaths.groupFigs);
 
     % Extract proficiency
     Q = extractProfic(sId,P,maxX);
@@ -137,6 +140,29 @@ S = table(repmat(categorical({subjectId}),size(StanOut,1),1),...
 StanOut = [S,StanOut];
 return
 
+function [stanOut] = getMemPoints(stanOut)
+%% Make c, 
+% subjectIds = getSubjectIds(G); 
+subjectIds = unique(stanOut{:,'subjectId'});
+nSubs = numel(subjectIds);
+r = pC2r(0.99);
+for jj=1:36
+    cs = nan((nSubs*8000),1);
+    for ii=1:nSubs
+        cid = subjectIds(ii,1);
+        idx = find(stanOut.subjectId==cid);
+        varNm = ['a_',int2str(jj)];
+        a = stanOut{idx,varNm};
+        varNm = ['b_',int2str(jj)];
+        b = stanOut{idx,varNm};
+        c = log(exp((atanh(r)./b))-1) + a;
+        cs(idx,1) = c;
+    end
+    varNm = ['c_',int2str(jj)];
+    stanOut.(varNm) = cs;
+end
+return
+
 function [Profic] = extractProfic(subjectId,P,maxX)
 theta = (0:5).*(pi/3);
 [a,b] =  ind2sub([6,6],1:(6^2));
@@ -144,6 +170,7 @@ names = cellfun(@(i1,i2)sprintf('%i_%i',i1,i2),...
     num2cell(a-1),num2cell(b-1),'UniformOutput',false);
 
 P0 = nan(size(P,1),6^2);
+R0 = nan(size(P,1), 36);
 for ii = 1:(6^2)
     a = P.(['a_',num2str(ii)]);
     b = P.(['b_',num2str(ii)]);
@@ -152,12 +179,16 @@ for ii = 1:(6^2)
     pmf = exp(cos(theta).*k);
     pmf = pmf./sum(pmf,2);
     P0(:,ii) = pmf(:,1);
+    R0(:,ii) = r;
 end
 
 X = mat2cell(P0,size(P,1),ones(1,36));
+R = mat2cell(R0,size(P,1),ones(1,36));
 Profic.EAP = cellfun(@getEAP,X);
 Profic.MAP = cellfun(@getMAP,X);
 Profic.pg0 = cellfun(@getPG0,X);
+Profic.prg05 = cellfun(@getPrg05,R);
+
 [Profic.low,Profic.med,Profic.upp] = cellfun(@getLMU,X);
 
 fns = fieldnames(Profic);
@@ -223,6 +254,12 @@ function [pg0] = getPG0(x)
 pg0 = mean(x>(1/6));
 return
 
+
+function [prg05] = getPrg05(r)
+prg05 = mean(r>0.5);
+return
+
+
 function [low,med,upp] = getLMU(x)
 [f,xi] = ecdf(x);
 [~,ii] = min((f-0.025).^2);
@@ -271,40 +308,43 @@ Estims.upp = nan(1,numel(param));
 
 isSd = find(contains(param,'2_'));
 isA = find(contains(param,'a_'));
+isC = find(contains(param,'c_'));
 for iParam = 1:numel(param)
     x = StanOut.(param(iParam));
 
     % Expected value
     Estims.EAP(iParam) = mean(x);
 
-    % Mode
-    if ismember(iParam,isSd)
-        [f,xi] = ksdensity(x,'Support','nonnegative',...
-            'BoundaryCorrection','reflection');
-        [~,imax] = max(f);
-        Estims.MAP(iParam) = xi(imax);
-    elseif ismember(iParam,isA)
-        [f,xi] = ksdensity(x,'Support',[0,maxX],...
-            'BoundaryCorrection','reflection');
-        [~,imax] = max(f);
-        Estims.MAP(iParam) = xi(imax);
-    else
-        [f,xi] = ksdensity(x);
-        [~,imax] = max(f);
-        Estims.MAP(iParam) = xi(imax);
+    if ~ismember(iParam,isC) %we only need the EAP of C and nothing else
+        % Mode
+        if ismember(iParam,isSd)
+            [f,xi] = ksdensity(x,'Support','nonnegative',...
+                'BoundaryCorrection','reflection');
+            [~,imax] = max(f);
+            Estims.MAP(iParam) = xi(imax);
+        elseif ismember(iParam,isA)
+            [f,xi] = ksdensity(x,'Support',[0,maxX],...
+                'BoundaryCorrection','reflection');
+            [~,imax] = max(f);
+            Estims.MAP(iParam) = xi(imax);
+        else
+            [f,xi] = ksdensity(x);
+            [~,imax] = max(f);
+            Estims.MAP(iParam) = xi(imax);
+        end
+
+        % Probability greater than zero
+        Estims.pg0(iParam) = mean(x>0);
+
+        % 2.5%, Median, 97.5%
+        [f,xi] = ecdf(x);
+        [~,ii] = min((f-0.025).^2);
+        Estims.low(iParam) = xi(ii);
+        [~,ii] = min((f-0.5).^2);
+        Estims.med(iParam) = xi(ii);
+        [~,ii] = min((f-0.975).^2);
+        Estims.upp(iParam) = xi(ii);
     end
-
-    % Probability greater than zero
-    Estims.pg0(iParam) = mean(x>0);
-
-    % 2.5%, Median, 97.5%
-    [f,xi] = ecdf(x);
-    [~,ii] = min((f-0.025).^2);
-    Estims.low(iParam) = xi(ii);
-    [~,ii] = min((f-0.5).^2);
-    Estims.med(iParam) = xi(ii);
-    [~,ii] = min((f-0.975).^2);
-    Estims.upp(iParam) = xi(ii);
 end
 fns = fieldnames(Estims);
 for iF = 1:numel(fns)
