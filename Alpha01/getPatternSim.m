@@ -1,7 +1,7 @@
 function [zTemplate,patternSim] = getPatternSim(G,roiId)
 
-% zTemplate = [nSubjects,1 OR 2 depending on alpha00 or alpha01];
-% patternSim = [6,6,nSubjects];
+% zTemplate = [nSubjects,2];
+% patternSim = [12,12,nSubjects];
 
 subjectIds = getSubjectIds(G);
 [~,order] = sort(subjectIds);

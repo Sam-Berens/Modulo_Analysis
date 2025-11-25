@@ -62,10 +62,10 @@ for iSubject = 1:numel(subjectIds)
     runIds = unique(TaskIO.iRun)';
     for iStim = stimIds'
         %positions to loop through
-        postion = 'AB';
+        position = 'AB';
         for iPos=1:2
-            X = postion(iPos);
-            x = lower(postion(iPos));
+            X = position(iPos);
+            x = lower(position(iPos));
             %rgi stands for regressor of intrest
             rgi = sprintf('%s%i',x,iStim);
             % Set and create the output directory (if needed)
