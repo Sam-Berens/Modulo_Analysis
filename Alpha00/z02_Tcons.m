@@ -7,15 +7,17 @@ for iSubject=1:numel(subjectIds)
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
 
-    %loop through the regs of intrst 0:5 and calculate their
-    % tstatistics (in a contrast which scales the beta for each run
-    for ii=0:5
-        rgName = ['i',num2str(ii)];
-        spmMat = [dirs.Alpha00 ,filesep,rgName,filesep,'SPM.mat'];
+    % Loop through the stimuli to compute map-wide t-statistics.
+    % These contrasts sums scaled beta across runs
+    for iStim = 0:5
+        stimId = ['i',num2str(iStim)];
+        spmMat = [dirs.Alpha00 ,filesep,stimId,filesep,'SPM.mat'];
         spmJob{1}.spm.stats.con.spmmat = {spmMat};
-        spmJob{1}.spm.stats.con.consess{1}.tcon.name = 'rgName';
-        %this is the unpadded weight vector, it relies on the beta
-        %structure being organised such that the reg of intrst is always 1st
+        spmJob{1}.spm.stats.con.consess{1}.tcon.name = stimId;
+
+        % Weights is the unpadded weight vector.
+        % It relies on the design matrix being organised such that the
+        % stimulus of intrst is always encoded by the first column.
         spmJob{1}.spm.stats.con.consess{1}.tcon.weights = 1;
         spmJob{1}.spm.stats.con.consess{1}.tcon.sessrep = 'replsc';
         spmJob{1}.spm.stats.con.delete = 1;
