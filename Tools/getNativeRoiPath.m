@@ -14,7 +14,7 @@ dirs.Roi = [...
 
 roiPath = dir([dirs.Roi,filesep,'*',roiPattern,'*']);
 if ~numel(roiPath)
-    roiPath = dir([roiPath,roiPattern,'*']);
+    roiPath = dir([dirs.Roi,filesep,roiPattern,'*']);
 end
 roiPath = [roiPath.folder, filesep, roiPath.name];
 

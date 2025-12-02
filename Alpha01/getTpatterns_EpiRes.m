@@ -1,87 +1,85 @@
-function [Data,cIsEpiInRoi] = getTpatterns_EpiRes(G,subjectId,roiId,dirs) 
-
+function [Data,pCover] = getTpatterns_EpiRes(G,subjectId,roiId)
 %Data is a [nStim,nVox,nPos] matrix of tStatistics;
 
-%% Load in volume headers and data
-mask.V = spm_vol(dirs.maskPath);
-mask.M = spm_read_vols(mask.V);
-%%Step where you convert roiId into and actual roi
+if iscategorical(subjectId)
+    subjectId = char(subjectId);
+end
+
+dirs.Data = ['..',filesep,'..',filesep,'Data'];
+dirs.Subject = [dirs.Data,filesep,subjectId];
+dirs.EPI = [dirs.Subject,filesep,'EPI'];
+dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
+
+% Get ROI mask
 roiPath = getNativeRoiPath(G,subjectId,roiId);
-roi.V = spm_vol(roiPath);
+roiMask.V = spm_vol(roiPath);
+roiMask.M = spm_read_vols(roiMask.V);
+roiMask.size = size(roiMask.M);
 
-%loop through regressors to build a t-statistic volume which is shaped with
-%stimulus in the 4th dim instead of time
-nStims = 6;
-positions = 'ab';
-nPos = 2;
-for iPos = 1:2
-    cPos = positions(iPos);
-    ts2Collect = cell(nStims,1);
-    for ii=0:5
-        rgName = [cPos,num2str(ii)];
-        tFp = [dirs.Alpha01 ,filesep,rgName,filesep,'spmT_0001.nii'];
-        ts2Collect{(ii+1),1} = tFp;
-    end
+%Spec the ROI coverage in ROI space
+roiCoverage = zeros(size(roiMask.M));
 
-    %put input to spm_vol into a format such that the resulting...
-    % M when its read will be x by y by z by condition
-    ts2Collect = permute(ts2Collect ,[2,3,4,1]);
+% Get EPI mask
+epiMask.name = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,subjectId);
+epiMask.V = spm_vol(epiMask.name);
 
-    %% Find the mm coords (Xyz) for all voxels in EPI
-    t.V = spm_vol(ts2Collect);
-    %this should also have 4th dim being stim, 5th dim being position
-    t.M = cellfun(@(s)spm_read_vols(s),t.V,'UniformOutput',false);
-    t.M = cell2mat(t.M);
+epiMask.M = spm_read_vols(epiMask.V);
+epiMask.idx = find(epiMask.M > 0.5);
+epiMask.size = size(epiMask.M);
 
-    %% Find the mm coords (Xyz) for all voxels in ROI
-    sz = size(t.M,[1,2,3]);
-    maxLinInd = sz(1) * sz(2) *sz(3);
-    %this gives us all voxel coords of t stat volume (epi res)
-    [x,y,z] = ind2sub(sz,1:maxLinInd); %this adds ones in 4th dim becasue affines are 4d
-    %this gives us the mm coords of all voxels in the epi image
-    Xyz = [x;y;z;ones(1,maxLinInd)];
-    Xyz = t.V{1,1,1,1}.mat*Xyz; %doesnt matter which condition we get the .mat from
+% Spec the ROI mask in EPI space!
+epiRoi.M = zeros(size(epiMask.M));
 
-    %% Sample from t Statistics over regressors using Xyz
-    nStims = 6;
-    cData = cell(nStims,1);
+% Loop through the epiMask to:
+%   1) populate epiRoi by samppling from roiMask
+%   2) populate roiCoverage by keeping track of where we have sampled from
+for iVoxel = 1:numel(epiMask.idx)
 
-    %this step says take the xyz coords of voxels(of EPI) ...
-    %in mm and put them into voxel 'indices' (in roi voxel space)
-    %rember they aren't whole indices hence why we're interpolating
-    Vx = roi.V.mat\Xyz;
-    %now we want to check to see is there a 1 in the roi mask for each
-    %point of epi space
-    cIsEpiInRoi = ...
-        spm_sample_vol(roi.V,...
-        Vx(1,:),Vx(2,:),Vx(3,:),-5);
-    cIsEpiInRoi(isnan(cIsEpiInRoi)) = 0;
-    cIsEpiInRoi = cIsEpiInRoi >0.5;
-
-    for iStim = 1:nStims
-        %syphon off current data
-        cTs = t.M(:,:,:,iStim);
-        %mask out bits not in the epi mask;
-        cTs = cTs.* mask.M;
-        %...then we pick out the t data at the point where there are ones...
-        cTs = cTs(cIsEpiInRoi); %here we are linearly indexing
-        %remove Ts outside of epiMask coverage
-        cData{iStim,1} = cTs; %here we are lin indexing using ...
-        % where the mask is nonzero (should only be ones or zeros)...
-        %also we're doing it like this to flatten the data
-    end
-
-    if strcmp(cPos,'a')
-        %if its the first position then build Data for first time
-        % and put current data in the first layer of the 3rd Dim
-        nVox = size(cData{1,1},2);
-        Data = nan(nStims,nVox,nPos);
-        Data(:,:,1) = cell2mat(cData);
-        isEpiInRoi(:,1) = cIsEpiInRoi;
-    else
-        %if its pos b we're filling in the 2nd layer of the 3rd Dim
-        Data(:,:,2) = cell2mat(cData); 
-        isEpiInRoi(:,2) = cIsEpiInRoi;
+    % Step 1:
+    [vx,vy,vz] = ind2sub(epiMask.size,epiMask.idx(iVoxel));
+    vxEpi = [vx,vy,vz,1]';
+    mm = epiMask.V.mat * vxEpi;
+    vxRoi = roiMask.V.mat \ mm;
+    sample = spm_sample_vol(roiMask.V, ...
+        vxRoi(1),vxRoi(2),vxRoi(3),-5);
+    epiRoi.M(vx,vy,vz) = sample;
+    % Step 2:
+    if sample > 0.5
+        [w,idxToWeight] = getLerpW(vxRoi(1:3)',roiMask.size);
+        roiCoverage(idxToWeight) = roiCoverage(idxToWeight) + w;
     end
 end
+
+% Get the masked EPI voxel indecies
+epiRoi.idx = find(epiRoi.M>0.5);
+
+% Get a matrix of t-stats
+nStim = 6;
+nPos = 2;
+positions = 'ab';
+Data = nan(numel(epiRoi.idx),nStim,nPos);
+for iPos = 1:nPos
+    cPos = positions(iPos);
+    for iStim = 1:nStim
+        stimId = [cPos,num2str(iStim-1)];
+        tFn = [dirs.Alpha01,filesep,stimId,filesep,'spmT_0001.nii'];
+        tV = spm_vol(tFn);
+        tM = spm_read_vols(tV);
+        Data(:,iStim,iPos) = tM(epiRoi.idx);
+    end
+end
+
+%stack a stim ontop of b stim
+Data = [Data(:,:,1),Data(:,:,2)];
+
+% Compute coverage stats
+pCover = sum(roiCoverage>(1e-6),'all')/sum(roiMask.M,'all');
 return
+
+
+
+
+
+
+
+

@@ -1,37 +1,35 @@
-function [zTemplate,patternSim] = getPatternSim(G,roiId)
+function [PatternSim] = getPatternSim(G,roiId)
+% Outputs is a table containing:
+%  - subjectId: [nSubj,1]
+%  - zTemplate: [nSubj,1]
+%  - pCover: [nSubj,1]
+%  - patternSim: {nSubj,1}
 
-% zTemplate = [nSubjects,1 OR 2 depending on alpha00 or alpha01];
-% patternSim = [6,6,nSubjects];
-
-subjectIds = getSubjectIds(G);
-[~,order] = sort(subjectIds);
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
-H = (3-min(cat(3,mod((0:5)'-(0:5),6),mod((0:5)-(0:5)',6)),[],3))./3;
-lower = tril(true(6),-1);
-patternSim = nan([6,6,numel(subjectIds)]);
-zTemplate = nan(numel(subjectIds),1);
-for iSubject=1:numel(subjectIds)
-    cId = subjectIds{iSubject};
-    %% prep for getTpatterns
-    %check about whether this is meant to come out or not because it could
-    %happen higher up but then we'd be passing dirs in instead of subjectId??
-    dirs.Subject = [dirs.Data,filesep,cId];
-    dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
-    dirs.EPI = [dirs.Subject,filesep,'EPI'];
-    dirs.maskPath = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
-
-    %% Sample t-stat data using mask ROI coordinates
-    Data = getTpatterns_EpiRes(G,cId,roiId,dirs);
-    %reminder that this M is (nStims,nVoxels)
-    % Compute pairwise Euclidian distances across conditions
-    D = pdist(Data,'euclidean');
-    D = squareform(D); % TO DO - check this is in the right form - i think it has zeros in the diagonal but mb we want to remove them?
-    r = corr(H(lower),D(lower),'Type','Kendall'); %this is the type of corr, between this and pearsons
-    patternSim(:,:,iSubject) = D;
-    z = atanh(r);
-    zTemplate(iSubject,1) = z;
+% Construct H (hypothesised similarity matrix)
+simFun = @(x,y) 1-((min(mod((x-y),6),mod((y-x),6))/3));
+H = nan(6);
+for ii = 1:36
+    [x,y] = ind2sub([6,6],ii);
+    H(ii) = simFun(x,y);
 end
-%make sure they are ordered the same as other subjectId ordered arrays
-patternSim = patternSim(:,:,order);
-zTemplate = zTemplate(order,1);
+
+% Get Subjets
+subjectId = getSubjectIds(G);
+nSubjects = numel(subjectId);
+
+% Do stuff
+lowerS = tril(true(6),-1);
+zTemplate = nan(nSubjects,1);
+pCover = nan(nSubjects,1);
+patternSim = cell(nSubjects,1);
+for iSubject = 1:nSubjects
+    cSubjectId = subjectId(iSubject);
+    [Data,pCover(iSubject)] = getTpatterns_EpiRes(G,cSubjectId,roiId);
+    R = corr(Data);
+    zTemplate(iSubject) = atanh(corr(H(lowerS),R(lowerS)));
+    patternSim{iSubject} = R;
+end
+
+% Make table
+PatternSim = table(subjectId,zTemplate,pCover,patternSim);
 return

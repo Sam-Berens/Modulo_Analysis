@@ -1,57 +1,66 @@
-function [zTemplate,patternSim] = getPatternSim(G,roiId)
+function [PatternSim] = getPatternSim(G,roiId)
+% Outputs is a table containing:
+%  - subjectId: [nSubj*2,1]
+%  - zTemplate: [nSubj*2,2]
+%  - colocation: [nSubj*2,1]
+%  - pCover: [nSubj*2,1]
+%  - patternSim: {nSubj*2,1}
 
-% zTemplate = [nSubjects,2];
-% patternSim = [12,12,nSubjects];
 
-subjectIds = getSubjectIds(G);
-[~,order] = sort(subjectIds);
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
-H = (3-min(cat(3,mod((0:5)'-(0:5),6),mod((0:5)-(0:5)',6)),[],3))./3;
+% Construct H (hypothesised similarity matrix)
+simFun = @(x,y) 1-((min(mod((x-y),6),mod((y-x),6))/3));
+H = nan(6);
+for ii = 1:36
+    [x,y] = ind2sub([6,6],ii);
+    H(ii) = simFun(x,y);
+end
+
+
+% Get Subjects
+subjectId = getSubjectIds(G);
+nSubjects = numel(subjectId);
+
+lowerS = tril(true(6),-1);
 rmvDiag = boolean(tril(ones(6),-1) + triu(ones(6),1));
-patternSim = nan([12,12,numel(subjectIds)]);
-zTemplate = nan(numel(subjectIds),2);
-for iSubject=1:numel(subjectIds)
-    cId = subjectIds{iSubject};
-    % prep for getTpatterns
-    %check about whether this is meant to come out or not because it could
-    %happen higher up but then we'd be passing dirs in instead of subjectId??
-    dirs.Subject = [dirs.Data,filesep,cId];
-    dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
-    dirs.EPI = [dirs.Subject,filesep,'EPI'];
-    dirs.maskPath = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,cId);
+zTemplate1 = nan(nSubjects,1);
+zTemplate2 = nan(nSubjects,1);
+coLocation = [ones(nSubjects,1);(-1 * ones(nSubjects,1))];
+pCover = nan(nSubjects,1);
+patternSim = cell(nSubjects,1);
+for iSubject=1:numel(subjectId)
+    cSubjectId = subjectId(iSubject);
+    %reminder that data is [12,nvox], with the 1st 6 rows being as
+    [Data,pCover(iSubject)] = getTpatterns_EpiRes(G,cSubjectId,roiId);
 
-    % Sample t-stat data using mask ROI coordinates
-    %remember that Data is organised such as [nStim,nVox,nPos]
-    Data = getTpatterns_EpiRes(G,cId,roiId,dirs);
-    Data = [Data(:,:,1);Data(:,:,2)];
     %reminder that this M is (nStims,nVoxels)
-    % Compute pairwise Euclidian distances across conditions
-    D = pdist(Data,'euclidean');
-    D = squareform(D); % TO DO - check this is in the right form - i think it has zeros in the diagonal but mb we want to remove them?
+    % Compute pairwise correlation of stimuli across voxels
+    %D = pdist(Data,'euclidean');
+    %D = squareform(D); 
+    R = corr(Data);
+    patternSim{iSubject} = R;
+
     %first chop off top triangle (just make zeros)
     lowerBig = tril(true(12),-1);
-    lD = lowerBig .* D;
-    %then you need to take the top 6 rows and reflect these into top right
-    %of an empty square which is 6 by 6 ,
-    aa = lD(1:6,1:6);
-    ab_ba = D(7:12,1:6);
-    bb = lD(7:12,7:12);
-    %flip these lower triangle values to be in the top
-    bb = permute(bb,[2,1]);
-   % add together colocal triangles
-    aa_bb = aa + bb;
-    %not sure how it makes sense to correlate a square with a square? we should be collapsing both right?  
-    % TO DO - FIND OUT WHETHER I'M MEANT TO BE CORRELATING LIKE THE UPPER
-    % PART OF H WITH BB AND LOWER PART OF H WITH AA OR IF THAT DOESNT MAKE
-    % SENSE
-    r1 = corr(H(rmvDiag),aa_bb(rmvDiag),'Type','Kendall'); %this is the type of corr, between this and pearsons
-    r2 = corr(H(rmvDiag),ab_ba(rmvDiag),'Type','Kendall'); 
-    patternSim(:,:,iSubject) = D;
-    z1 = atanh(r1);
+    lR = lowerBig .* R;
+    aa = lR(1:6,1:6);
+    ab_ba = R(7:12,1:6);
+    bb = lR(7:12,7:12);
+
+    r1a = corr(H(lowerS),aa(lowerS));
+    r1b = corr(H(lowerS),bb(lowerS));
+    z1a = atanh(r1a);
+    z1b = atanh(r1b);
+    z1 = mean([z1a,z1b]);
+    r2 = corr(H(rmvDiag),ab_ba(rmvDiag)); 
     z2 = atanh(r2);
-    zTemplate(iSubject,1:2) = [z1,z2];
+    patternSim{iSubject,1} = R;
+    zTemplate1(iSubject,1) = z1;
+    zTemplate2(iSubject,1) = z2;
 end
-%make sure they are ordered the same as other subjectId ordered arrays
-patternSim = patternSim(:,:,order);
-zTemplate = zTemplate(order,:);
+
+zTemplate = [zTemplate1;zTemplate2];
+subjectId = repmat(subjectId,[2,1]);
+pCover = repmat(pCover,[2,1]);
+patternSim =  repmat(patternSim,[2,1]);
+PatternSim = table(coLocation,subjectId,pCover,zTemplate,patternSim);
 return
