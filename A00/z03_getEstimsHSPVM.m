@@ -141,25 +141,13 @@ StanOut = [S,StanOut];
 return
 
 function [stanOut] = getMemPoints(stanOut)
-%% Make c, 
-% subjectIds = getSubjectIds(G); 
-subjectIds = unique(stanOut{:,'subjectId'});
-nSubs = numel(subjectIds);
+% Make c
 r = pC2r(0.99);
-for jj=1:36
-    cs = nan((nSubs*8000),1);
-    for ii=1:nSubs
-        cid = subjectIds(ii,1);
-        idx = find(stanOut.subjectId==cid);
-        varNm = ['a_',int2str(jj)];
-        a = stanOut{idx,varNm};
-        varNm = ['b_',int2str(jj)];
-        b = stanOut{idx,varNm};
-        c = log(exp((atanh(r)./b))-1) + a;
-        cs(idx,1) = c;
-    end
-    varNm = ['c_',int2str(jj)];
-    stanOut.(varNm) = cs;
+for jj = 1:36
+    a = stanOut.(['a_',int2str(jj)]);
+    b = stanOut.(['b_',int2str(jj)]);
+    c = log(exp((atanh(r)./b))-1) + a;
+    stanOut.(['c_',int2str(jj)]) = c;
 end
 return
 
@@ -314,8 +302,16 @@ for iParam = 1:numel(param)
 
     % Expected value
     Estims.EAP(iParam) = mean(x);
-
-    if ~ismember(iParam,isC) %we only need the EAP of C and nothing else
+    %we only need the EAP of C and nothing else
+    if ismember(iParam,isC)
+        if imag(Estims.EAP(iParam))>(pi/2)
+        %negative learning rate means no memPoint    
+            Estims.EAP(iParam) = NaN; 
+        elseif Estims.EAP(iParam)> maxX
+        %not being at rCrit by end of training means no memPoint
+            Estims.EAP(iParam) = NaN;
+        end
+    else
         % Mode
         if ismember(iParam,isSd)
             [f,xi] = ksdensity(x,'Support','nonnegative',...

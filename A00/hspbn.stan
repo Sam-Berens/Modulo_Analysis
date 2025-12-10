@@ -49,15 +49,10 @@ transformed data {
   // maxX: Max value of the predictor variable x.
   real<lower=0> maxX = max(x);
   
-  // theta: A vector to store all possible angular errors.
-  // roots: A corresponding array of complex roots of unity.
-  vector[6] theta;
-  array[6] complex roots;
-  for (i in 1 : 6) {
-    real t = fmod((i - 1) * (pi() / 3), 2 * pi());
-    theta[i] = t;
-    roots[i] = exp(to_complex(0, t));
-  }
+// this vector never gets used but conceptually is useful to think about as a replacement of theta
+ // vector[2] error;
+ // error[1] = 0;
+  //error[2] = 1;
   
   // Yidx: Array of response indices for theta.
   // nTry: Number of attempts per trial.
@@ -68,9 +63,13 @@ transformed data {
     for (k in 1 : 6) {
       if (!is_nan(Y[iTrial, k])) {
         nk += 1;
-        real yt = fmod((Y[iTrial, k] - c[iTrial]) * (pi() / 3), 2 * pi());
-        complex yc = exp(to_complex(0, yt));
-        Yidx[iTrial, k] = findIdx(roots, yc);
+        int correct = Y[iTrial, k] == c[iTrial];
+        if (correct){
+          Yidx[iTrial, k] = 1;
+        } else {
+          Yidx[iTrial, k] = 2;
+        }
+
       } else {
         Yidx[iTrial, k] = 0;
       }
@@ -112,7 +111,7 @@ transformed parameters {
   }
 
   // a: Bounded and scaled learning offset parameter (one per pair).
-   vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX; //maybe this shouldnt be constrained to maxX - it would be like saying, they didnt get to the shoulder of learning yet?
+   vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX;
 }
 model {
   // Logistic prior for alpha1.
@@ -120,7 +119,7 @@ model {
   // Normal prior for beta1.
   // Half-normal prior for beta2.
 for (iType in 1 : nTypes) {
-    alpha1[iType] ~ normal(0, 0.5);
+    alpha1[iType] ~ logistic(0, 0.5); //most recent outputs are from when this was 0.3 but 0.5 was better!
     alpha2[iType] ~ normal(1, 0.02) T[0,];
     beta1[iType] ~ normal(0, 0.05);
     beta2[iType] ~ normal(0.05, 0.001) T[0,];
@@ -147,14 +146,12 @@ for (iType in 1 : nTypes) {
     // Compute binomial probabilities: prCorr, prInco.
     // xPred ∈ [-∞, ∞], given by SoftPlus(x-a)*b.
     real xPred = log1p_exp(x[iTrial] - a[pid]) * b[pid];
-    real prCorr = inv_logit(-log(6) + xPred);
+    real prCorr = inv_logit(-log(5) + xPred); //this was -log(6) before but should be 5 for chance level!
     real prInco = 1 - prCorr;
-    // Split prInco among all incorrect responses.
-    real prBads = prInco / 5;
 
-    // lpmf: A 6-vector of predicted response log-probabilities ...
-    // ... unsorted, with entries corresponding to theta.
-     vector[6] lpmf = log([prCorr,prBads,prBads,prBads,prBads,prBads]');
+    // lpmf: A 2-vector of predicted response log-probabilities ...
+    // ... unsorted, with index of entries corresponding to their error code(1= cor, 2= inco).
+     vector[2] lpmf = log([prCorr,prInco]');
 
     // rlpmf: A vector of predicted response log-probabilities ...
     // ... sorted, with entries corresponding to Y.
