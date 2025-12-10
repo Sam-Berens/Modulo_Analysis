@@ -26,4 +26,5 @@ hemi = double(contains(roiNames,'l'));
 hemi(~hemi) = -1;
 hemiInfo = table(categorical(roiNames),hemi,'VariableNames',{'roiName','hemisphere'});
 DataTable00 = join(DataTable00,hemiInfo);
+save('DataTable00.mat',"DataTable00");
 return

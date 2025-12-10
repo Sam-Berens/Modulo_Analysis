@@ -29,13 +29,9 @@ pCover = nan(nSubjects,1);
 patternSim = cell(nSubjects,1);
 for iSubject=1:numel(subjectId)
     cSubjectId = subjectId(iSubject);
-    %reminder that data is [12,nvox], with the 1st 6 rows being as
+    %reminder that data is [12,nvox], with the 1st 6 rows being As
     [Data,pCover(iSubject)] = getTpatterns_EpiRes(G,cSubjectId,roiId);
-
-    %reminder that this M is (nStims,nVoxels)
     % Compute pairwise correlation of stimuli across voxels
-    %D = pdist(Data,'euclidean');
-    %D = squareform(D); 
     R = corr(Data);
     patternSim{iSubject} = R;
 

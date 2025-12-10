@@ -1,5 +1,5 @@
 function [Data,pCover] = getTpatterns_EpiRes(G,subjectId,roiId)
-%Data is a [nStim,nVox,nPos] matrix of tStatistics;
+%Data is a [nVox,(nStim*nPos)] matrix of tStatistics;
 
 if iscategorical(subjectId)
     subjectId = char(subjectId);
@@ -70,6 +70,7 @@ for iPos = 1:nPos
 end
 
 %stack a stim ontop of b stim
+% we want stim to be the columns as thats what corr expects
 Data = [Data(:,:,1),Data(:,:,2)];
 
 % Compute coverage stats
