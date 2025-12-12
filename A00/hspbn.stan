@@ -13,11 +13,6 @@ functions {
     }
     return idx;
   }
-
-  // softmin: smooth alternative to fmin
-  real softmin(real a, real b, real k) {
-    return -log_sum_exp(-k * a, -k * b) / k;
-  }
 }
 data {
   // nTrials: Number of trials.
@@ -49,14 +44,9 @@ transformed data {
   // maxX: Max value of the predictor variable x.
   real<lower=0> maxX = max(x);
   
-// this vector never gets used but conceptually is useful to think about as a replacement of theta
- // vector[2] error;
- // error[1] = 0;
-  //error[2] = 1;
-  
-  // Yidx: Array of response indices for theta.
+  // Ycor: Array of correct (1) vs incorrect (0) responses for each trial.
   // nTry: Number of attempts per trial.
-  array[nTrials, 6] int Yidx;
+  array[nTrials, 6] int Ycor;
   array[nTrials] int<lower=1, upper=6> nTry;
   for (iTrial in 1 : nTrials) {
     int nk = 0;
@@ -64,19 +54,11 @@ transformed data {
       if (!is_nan(Y[iTrial, k])) {
         nk += 1;
         int correct = Y[iTrial, k] == c[iTrial];
-        if (correct){
-          Yidx[iTrial, k] = 1;
-        } else {
-          Yidx[iTrial, k] = 2;
-        }
-
-      } else {
-        Yidx[iTrial, k] = 0;
+        Ycor[iTrial, k] = correct;
       }
     }
     nTry[iTrial] = nk;
   }
-
 }
 parameters {
   // alpha1 and alpha2:
@@ -96,7 +78,7 @@ parameters {
   vector[nPairs] zau;
   
   // zb: Learning rate parameter (one per pair).
-  //      (type-centered).
+  //     (type-centered).
   vector[nPairs] zb;
 }
 transformed parameters {
@@ -106,23 +88,23 @@ transformed parameters {
   vector[nPairs] b;
   for (iPair in 1 : nPairs) {
     int typeidx = id2type[iPair];
-    au[iPair] = alpha1[typeidx] + (zau[iPair]*alpha2[typeidx]); 
-    b[iPair] = beta1[typeidx] + (zb[iPair]*beta2[typeidx]);
+    au[iPair] = alpha1[typeidx] + (zau[iPair] * alpha2[typeidx]);
+    b[iPair] = beta1[typeidx] + (zb[iPair] * beta2[typeidx]);
   }
-
+  
   // a: Bounded and scaled learning offset parameter (one per pair).
-   vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX;
+  vector<lower=0, upper=maxX>[nPairs] a = inv_logit(au) * maxX;
 }
 model {
   // Logistic prior for alpha1.
   // Half-normal prior for alpha2.
   // Normal prior for beta1.
   // Half-normal prior for beta2.
-for (iType in 1 : nTypes) {
-    alpha1[iType] ~ logistic(0, 0.5); //most recent outputs are from when this was 0.3 but 0.5 was better!
-    alpha2[iType] ~ normal(1, 0.02) T[0,];
-    beta1[iType] ~ normal(0, 0.05);
-    beta2[iType] ~ normal(0.05, 0.001) T[0,];
+  for (iType in 1 : nTypes) {
+    alpha1[iType] ~ logistic(0, 1);
+    alpha2[iType] ~ normal(0.1, 0.05) T[0, ];
+    beta1[iType] ~ normal(0, 0.1);
+    beta2[iType] ~ normal(0.01, 0.005) T[0, ];
   }
   // Parameter distributions for each pair type:
   // Normal(0,1) for zau;
@@ -146,30 +128,23 @@ for (iType in 1 : nTypes) {
     // Compute binomial probabilities: prCorr, prInco.
     // xPred ∈ [-∞, ∞], given by SoftPlus(x-a)*b.
     real xPred = log1p_exp(x[iTrial] - a[pid]) * b[pid];
-    real prCorr = inv_logit(-log(5) + xPred); //this was -log(6) before but should be 5 for chance level!
+    real prCorr = inv_logit(-log(5) + xPred);
     real prInco = 1 - prCorr;
-
-    // lpmf: A 2-vector of predicted response log-probabilities ...
-    // ... unsorted, with index of entries corresponding to their error code(1= cor, 2= inco).
-     vector[2] lpmf = log([prCorr,prInco]');
-
-    // rlpmf: A vector of predicted response log-probabilities ...
+    
+    // pmf: A prob mass function for the correctness of each response
+    vector[2] pmf = [prInco, prCorr]';
+    
+    // rlProb: A vector of predicted response log-probabilities ...
     // ... sorted, with entries corresponding to Y.
-    vector[nTry[iTrial]] rlpmf;
+    vector[nTry[iTrial]] rlProb;
     for (k in 1 : nTry[iTrial]) {
-      rlpmf[k] = lpmf[Yidx[iTrial, k]];
+      real top = log(5 * pmf[1 + Ycor[iTrial, k]]);
+      real bot = log((k-1) * pmf[1 + 1] + (6-k));
+      rlProb[k] = top - bot;
     }
-
+    
     // Update the log-likelihood for the current trial.
-    //TO DO - apparently in the new model the cummaltive prs can approach 1 very quickly?
-    real cumsum_lq = negative_infinity();
-    lq[iTrial] = 0;
-    for (k in 1 : nTry[iTrial]) {
-      //cumsum_lq = fmin(cumsum_lq, -1e-15); // Protection 
-      cumsum_lq = softmin(cumsum_lq, -1e-15, 50);
-      lq[iTrial] += rlpmf[k] - log1m_exp(cumsum_lq);
-      cumsum_lq = log_sum_exp(cumsum_lq, rlpmf[k]); 
-    }
+    lq[iTrial] = sum(rlProb);
   }
   
   // Add the log-likelihood to the target.
