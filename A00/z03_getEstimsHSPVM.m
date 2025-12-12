@@ -1,4 +1,107 @@
-function [] = z03_getEstimsHSPVM(subjectIds)
+function [] = z03_getEstimsHSPVM(G,plotFig)
+% z03_getEstimsHSPVM
+%
+%   z03_getEstimsHSPVM(G, plotFig)
+%
+%   This function extracts posterior samples, parameter estimates, and
+%   diagnostics from hierarchical Stan output for all subjects in a
+%   dataset. It reads per-subject von Mises model output (stored as CSV
+%   files), computes derived memorisation parameters, extracts proficiency
+%   metrics, estimates parameter summaries (EAP, MAP, CI bounds, etc.),
+%   gathers MCMC diagnostics (Rhat and divergences), optionally generates
+%   diagnostic plots, and saves all aggregated results to a group-level
+%   Output.mat file.
+%
+% INPUTS
+%   G        (optional) — A grouping variable or subject-selection argument
+%                         used by getSubjectIds(G). If provided and
+%                         non-empty, subject IDs are taken from this
+%                         argument. If omitted or empty, subject IDs are
+%                         inferred automatically from the Data directory.
+%
+%   plotFig  (optional, default = false) — If true, the function generates
+%                         diagnostic figures for each subject, including:
+%                             - Scatter-histograms of posterior samples
+%                             - Rhat heatmap for all parameters
+%
+% OUTPUTS
+%   This function does not return variables directly, but saves the
+%   following structures to:
+%       ../Data/_Group/A00/vonMises/Output.mat
+%
+%   Saved variables:
+%       PostSamps — Table of concatenated posterior samples for all
+%                   subjects.
+%       Profic    — Struct containing per-subject proficiency measures
+%                   (EAP, MAP, pmf-based metrics, and LMU intervals).
+%       Estims    — Struct containing parameter estimates (EAP, MAP, pg0,
+%                   credible intervals, proportion of NaNs) for all model
+%                   parameters.
+%       Diagno    — Struct containing:
+%                       - Rhat   - Table of Rhat values for all parameters.
+%                       - Diverg - Table of divergence counts per chain.
+%
+% PROCESSING STEPS (High-Level Overview)
+%   1. Identify subject IDs.
+%   2. For each subject:
+%        • Load input metadata (maxX)
+%        • Read Stan CSV outputs for all chains
+%        • Clean and merge chains; append subjectId label
+%        • Compute memorisation points (parameters c_i)
+%        • Optionally generate posterior scatter-histogram plots
+%        • Extract proficiency summaries across spatial bins
+%        • Extract parameter estimates (EAP, MAP, CI, pg0, pNaN)
+%        • Compute MCMC diagnostics (Rhat and divergences)
+%        • Append all data to group-level tables/structs
+%   3. Optionally plot aggregated Rhat heatmap
+%   4. Save all results to disk
+%
+% DIRECTORY REQUIREMENTS
+%   The function assumes the following folder structure for each subject:
+%
+%       <Data>/<subjectId>/Analysis/A00/
+%           InputData.json
+%           vonMises/Output_*.csv
+%
+% FIGURE OUTPUTS (if plotFig == true)
+%   Saved under:
+%       <Data>/_Group/A00/vonMises/Figures/<subjectId>/
+%   Includes:
+%       • Parameter pair scatter-histograms for alpha/beta groups
+%       • Pairwise scatter-histograms for all (a_i, b_i)
+%       • Group-level R̂ heatmap
+%
+% NOTES
+%   - Warnings for MATLAB table variable-name modifications and UI printing
+%     are temporarily disabled for smoother batch execution.
+%   - Parameter sets include:
+%         alpha1_*, alpha2_*,
+%         beta1_*,  beta2_*,
+%         a_1...a_36, b_1...b_36, c_1...c_36
+%   - Derived c parameters are computed using the inverse link
+%     transformation via pC2r() and handled safely for invalid/complex
+%     values.
+%
+% See also:
+%   getSubjectIds, pC2r, extractProfic
+
+
+
+%% Get subjectIds
+dirPaths = struct;
+dirPaths.Data = ['..',filesep,'..',filesep,'Data',filesep];
+if (nargin > 0) && ~isempty(G)
+    subjectIds = getSubjectIds(G);
+elseif nargin == 0 || isempty(G)
+    dirLits = dir(dirPaths.Data);
+    subjectIds = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
+    subjectIds = categorical(subjectIds);
+end
+
+%% Checks and setup
+if nargin < 2
+    plotFig = false;
+end
 
 % Turn off warnings
 warning('off','MATLAB:table:ModifiedAndSavedVarnames');
@@ -19,8 +122,6 @@ for ii = 1:36
 end
 
 %% Make dirPaths structure
-dirPaths = struct;
-dirPaths.Data = ['..',filesep,'..',filesep,'Data',filesep];
 dirPaths.IO = @(sId) [dirPaths.Data,sId,filesep,...
     'Analysis',filesep,'A00',filesep];
 
@@ -36,13 +137,6 @@ if ~exist(dirPaths.groupFigs,'dir')
     mkdir(dirPaths.groupFigs);
 end
 
-%% Get subjectIds
-if nargin == 0
-    dirLits = dir(dirPaths.Data);
-    subjectIds = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
-end
-subjectIds = categorical(subjectIds);
-
 %% Subject loop
 for iSubject = 1:numel(subjectIds)
     sId = char(subjectIds(iSubject));
@@ -56,10 +150,13 @@ for iSubject = 1:numel(subjectIds)
     % Get posterior samples
     P = readCSVs(sId,outList);
 
+    % Compute the memorisation points
     P = getMemPoints(P);
 
     % Plot the postrior samples
-    % plotStanFit(P,dirPaths.groupFigs);
+    if plotFig
+        plotStanFit(P,dirPaths.groupFigs);
+    end
 
     % Extract proficiency
     Q = extractProfic(sId,P,maxX);
@@ -79,10 +176,14 @@ for iSubject = 1:numel(subjectIds)
         Diverg = D;
         Pfns = fieldnames(Profic);
         Efns = fieldnames(Estims);
+        subjectId = subjectIds(iSubject); 
+        MaxX = table(subjectId,maxX);
     else
         PostSamps = [PostSamps;P];
         Rhat = [Rhat;R];
         Diverg = [Diverg;D];
+        MaxX{iSubject,"subjectId"} = subjectIds(iSubject);
+        MaxX{iSubject,"maxX"} = maxX;
         for iF = 1:numel(Pfns)
             Profic.(Pfns{iF}) = [Profic.(Pfns{iF});Q.(Pfns{iF})];
         end
@@ -93,7 +194,9 @@ for iSubject = 1:numel(subjectIds)
 end
 
 %% Print Rhat
-plotRhat(Rhat,dirPaths.groupFigs);
+if plotFig
+    plotRhat(Rhat,dirPaths.groupFigs);
+end
 
 %% Turn warning back on
 warning('on','MATLAB:table:ModifiedAndSavedVarnames');
@@ -107,7 +210,8 @@ save([dirPaths.groupOut,filesep,'Output.mat'],...
     'PostSamps',...
     'Profic',...
     'Estims',...
-    'Diagno');
+    'Diagno',...
+    'MaxX');
 
 return
 
@@ -147,6 +251,8 @@ for jj = 1:36
     a = stanOut.(['a_',int2str(jj)]);
     b = stanOut.(['b_',int2str(jj)]);
     c = log(exp((atanh(r)./b))-1) + a;
+    s = imag(c)>(pi/2) | ~isfinite(c);
+    c(s) = NaN;
     stanOut.(['c_',int2str(jj)]) = c;
 end
 return
@@ -293,6 +399,7 @@ Estims.pg0 = nan(1,numel(param));
 Estims.low = nan(1,numel(param));
 Estims.med = nan(1,numel(param));
 Estims.upp = nan(1,numel(param));
+Estims.pNan = nan(1,numel(param));
 
 isSd = find(contains(param,'2_'));
 isA = find(contains(param,'a_'));
@@ -300,47 +407,49 @@ isC = find(contains(param,'c_'));
 for iParam = 1:numel(param)
     x = StanOut.(param(iParam));
 
-    % Expected value
-    Estims.EAP(iParam) = mean(x);
-    %we only need the EAP of C and nothing else
-    if ismember(iParam,isC)
-        if imag(Estims.EAP(iParam))>(pi/2)
-        %negative learning rate means no memPoint    
-            Estims.EAP(iParam) = NaN; 
-        elseif Estims.EAP(iParam)> maxX
-        %not being at rCrit by end of training means no memPoint
-            Estims.EAP(iParam) = NaN;
-        end
-    else
-        % Mode
-        if ismember(iParam,isSd)
-            [f,xi] = ksdensity(x,'Support','nonnegative',...
-                'BoundaryCorrection','reflection');
-            [~,imax] = max(f);
-            Estims.MAP(iParam) = xi(imax);
-        elseif ismember(iParam,isA)
-            [f,xi] = ksdensity(x,'Support',[0,maxX],...
-                'BoundaryCorrection','reflection');
-            [~,imax] = max(f);
-            Estims.MAP(iParam) = xi(imax);
-        else
-            [f,xi] = ksdensity(x);
-            [~,imax] = max(f);
-            Estims.MAP(iParam) = xi(imax);
-        end
-
-        % Probability greater than zero
-        Estims.pg0(iParam) = mean(x>0);
-
-        % 2.5%, Median, 97.5%
-        [f,xi] = ecdf(x);
-        [~,ii] = min((f-0.025).^2);
-        Estims.low(iParam) = xi(ii);
-        [~,ii] = min((f-0.5).^2);
-        Estims.med(iParam) = xi(ii);
-        [~,ii] = min((f-0.975).^2);
-        Estims.upp(iParam) = xi(ii);
+    if mean(isnan(x)) > (1/2)
+        continue
     end
+
+    % Expected value
+    Estims.EAP(iParam) = mean(x,'omitmissing');
+
+    % Mode
+    if ismember(iParam,isSd)
+        [f,xi] = ksdensity(x,'Support','nonnegative',...
+            'BoundaryCorrection','reflection');
+        [~,imax] = max(f);
+        Estims.MAP(iParam) = xi(imax);
+    elseif ismember(iParam,isA)
+        [f,xi] = ksdensity(x,'Support',[0,maxX],...
+            'BoundaryCorrection','reflection');
+        [~,imax] = max(f);
+        Estims.MAP(iParam) = xi(imax);
+    elseif ismember(iParam,isC)
+            [f,xi] = ksdensity(x,'Support',[0,Inf],...
+                'BoundaryCorrection','reflection');
+            [~,imax] = max(f);
+            Estims.MAP(iParam) = xi(imax);
+    else
+        [f,xi] = ksdensity(x);
+        [~,imax] = max(f);
+        Estims.MAP(iParam) = xi(imax);
+    end
+
+    % Probability greater than zero
+    Estims.pg0(iParam) = mean(x>0);
+
+    % 2.5%, Median, 97.5%
+    [f,xi] = ecdf(x);
+    [~,ii] = min((f-0.025).^2);
+    Estims.low(iParam) = xi(ii);
+    [~,ii] = min((f-0.5).^2);
+    Estims.med(iParam) = xi(ii);
+    [~,ii] = min((f-0.975).^2);
+    Estims.upp(iParam) = xi(ii);
+
+    % Compute the proportion of valid samples
+    Estims.pNan(iParam) = mean(isnan(x));
 end
 fns = fieldnames(Estims);
 for iF = 1:numel(fns)
@@ -387,6 +496,21 @@ Diverg = [...
     table(categorical({subjectId}),'VariableNames',{'subjectId'}),...
     Diverg];
 
+return
+
+function [] = plotRhat(Rhat,savePath)
+fh = figure('Units','normalized','OuterPosition',[0,0,1,1]);
+R = Rhat(:,2:end).Variables;
+imagesc(R);
+colorbar;
+xticks(1:size(R,2));
+xtickangle(90);
+xticklabels(strrep(Rhat.Properties.VariableNames(2:end),'_','.'));
+yticks(1:size(Rhat,1));
+yticklabels(Rhat.subjectId);
+print(fh,sprintf('%s%sRhat.png',...
+    savePath,filesep),'-dpng');
+close(fh);
 return
 
 function [] = plotStanFit(StanOut,figPath)
@@ -443,19 +567,4 @@ for iP = 1:36
         figPath,filesep,iP,(iy-1),(ix-1)),'-dpng');
     close(fh);
 end
-return
-
-function [] = plotRhat(Rhat,savePath)
-fh = figure('Units','normalized','OuterPosition',[0,0,1,1]);
-R = Rhat(:,2:end).Variables;
-imagesc(R);
-colorbar;
-xticks(1:size(R,2));
-xtickangle(90);
-xticklabels(strrep(Rhat.Properties.VariableNames(2:end),'_','.'));
-yticks(1:size(Rhat,1));
-yticklabels(Rhat.subjectId);
-print(fh,sprintf('%s%sRhat.png',...
-    savePath,filesep),'-dpng');
-close(fh);
 return

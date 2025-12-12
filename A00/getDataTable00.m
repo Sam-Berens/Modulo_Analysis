@@ -8,51 +8,87 @@ if exist('DataTable00.mat','file')
 end
 
 dirs.model = fullfile('..','..','Data','_Group','A00','vonMises');
+stanOut = load(fullfile(dirs.model,'Output.mat'));
 
-stanOut = load([dirs.model,filesep,'Output.mat']);
-% Expected A Posteriori for each questions a and b parameter in the model
-Estims = stanOut.Estims.EAP(:,[1,18:end]);
-varNames = Estims.Properties.VariableNames;
+% MAP/EAP tables, trimmed
+Estims = {stanOut.Estims.MAP(:,[1,18:end]), ...
+    stanOut.Estims.EAP(:,[1,18:end])};
+%extract maxX and preallocate 
+MaxX = stanOut.MaxX;
+DataTable00 = table();
+measures = ["MAP","EAP"]; %types of estimates to store for each term 
+params   = ["a","b","c"];  % prefixes to extract
 
-s = contains(varNames,'a_');
-s(1) = true; % Keep subjectID
-A = Estims(:,s);
-A = Wide2Long(A,'a');
+% Pre-extract pNan (only used for c)
+pNanRaw = stanOut.Estims.pNan;
+pNanVarNames = pNanRaw.Properties.VariableNames;
 
-s = contains(varNames,'b_');
-s(1) = true; % Keep subjectID
-B = Estims(:,s);
-B = Wide2Long(B,'b');
+% Convert pNan to long format once per measure later
+cMask_pNan = contains(pNanVarNames,"c_");
+cMask_pNan(1) = true;  % keep subjectID
+pNanWide = pNanRaw(:,cMask_pNan);
 
-s = contains(varNames,'c_');
-s(1) = true; % Keep subjectID
-C = Estims(:,s);
-C = Wide2Long(C,'c');
+for iM = 1:2
+    Est = Estims{iM};
+    measure = measures(iM);
+    vNames = Est.Properties.VariableNames;
+    Results = struct();
+    % Handle a, b, c in same loop 
+    for p = params
+        mask = contains(vNames, p + "_");
+        mask(1) = true;  % keep subjectID
+        wideTable = Est(:,mask);
 
-% Pr(r>0.5 @ maxX)
-Prg05 = stanOut.Profic.prg05;
-Prg05 = Wide2Long(Prg05,'prg05');
+        % Convert wide to long
+        longTable = Wide2Long(wideTable, measure + "_" + p);
+        % post-processing for "c" using proportion of samples which were
+        % either predicted to be complex of inf in A00 
+        if p == "c"
+            % join MaxX + pNan
+            LT = join(longTable, MaxX);
+            LT = join(LT, Wide2Long(pNanWide, "pNan"));
+            % less negatively biased c estimate
+            LT.ubc = LT.pNan .* 2.*LT.maxX + LT.(measure + "_c") .* (1-LT.pNan);
+            % rename to avoid duplicate columns later
+            LT.Properties.VariableNames{'pNan'} = char(measure + "c_pNan");
+            LT.Properties.VariableNames{'ubc'} = char(measure + "ubc");
+            longTable = LT;
+        end
+        Results.(p) = longTable;
+    end
 
+    % append running table
+    if iM == 1
+        DataTable00 = join(Results.a, Results.b);
+        DataTable00 = join(DataTable00, Results.c);
+        % Pr(r>0.5 @ maxX)
+        Prg05 = stanOut.Profic.prg05;
+        Prg05 = Wide2Long(Prg05,'prg05');
+        DataTable00 = join(DataTable00,Prg05);
+        % Make learnt
+        DataTable00.learnt = double(DataTable00.prg05 > 0.5);
+        [names, codes] = getQtype(Prg05.pairId);
+        DataTable00.pairType = names;
+        DataTable00.sup = codes(:,1);
+        DataTable00.zero = codes(:,2);
+        DataTable00.commute = codes(:,3);
+        DataTable00.noncom = codes(:,4);
+    else
+        DataTable00 = join(DataTable00, Results.a);
+        DataTable00 = join(DataTable00, Results.b);
+        DataTable00 = join(DataTable00, Results.c);
+    end
+    %Make Chi term for either MAP or EAP
+    sSup = DataTable00.pairType=="Sup";
+    DataTable00.(measure+"chi") = nan(size(DataTable00,1),1);
+    DataTable00.(measure+"chi")(sSup,1) = ...
+    DataTable00.(measure + "_a")(sSup) + DataTable00.(measure + "_c")(sSup);
+    DataTable00.(measure+"chi")(~sSup,1) = DataTable00.(measure + "_a")(~sSup);
+end
+%move around columns created by weird looping artifacts
+DataTable00 = movevars(DataTable00, 'maxX', 'After', 'EAPchi');
+DataTable00 = movevars(DataTable00, 'MAPchi', 'After', 'MAPubc');
 
-DataTable00 = join(A,B);
-DataTable00 = join(DataTable00,C);
-DataTable00 = join(DataTable00,Prg05);
-
-% Make learnt
-DataTable00.learnt = double(DataTable00.prg05 > 0.5);
-%everything beyond this is post-meeting addtions
-[names, codes] = getQtype(Prg05.pairId);
-DataTable00.pairType = names; %I think technically the model function can cope with using this instead of the binary columns but check
-DataTable00.sup = codes(:,1); 
-DataTable00.zero = codes(:,2); 
-DataTable00.commute = codes(:,3); 
-DataTable00.noncom = codes(:,4); 
-%Make Chi term 𝜒
-sSup = DataTable00.pairType=="Sup";
-DataTable00.chi = nan(size(DataTable00,1),1);
-DataTable00.chi(sSup,1) = ...
-    DataTable00.a(sSup) + DataTable00.c(sSup);
-DataTable00.chi(~sSup,1) = DataTable00.a(~sSup);
 save('DataTable00.mat',"DataTable00");
 return
 
