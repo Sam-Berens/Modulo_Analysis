@@ -145,7 +145,7 @@ model {
       if (k > 1) {
         bot = 1 - (k-1)*prInco/5;
       }
-      top = fmax(bot, 1e-15);
+      top = fmax(top, 1e-15);
       bot = fmax(bot, 1e-15);
       rlProb[k] = log(top) - log(bot);
     }
