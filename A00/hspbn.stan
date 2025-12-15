@@ -131,16 +131,23 @@ model {
     real prCorr = inv_logit(-log(5) + xPred);
     real prInco = 1 - prCorr;
     
-    // pmf: A prob mass function for the correctness of each response
-    vector[2] pmf = [prInco, prCorr]';
-    
     // rlProb: A vector of predicted response log-probabilities ...
     // ... sorted, with entries corresponding to Y.
     vector[nTry[iTrial]] rlProb;
+    real top;
+    real bot = 1;
     for (k in 1 : nTry[iTrial]) {
-      real top = log(5 * pmf[1 + Ycor[iTrial, k]]);
-      real bot = log((k-1) * pmf[1 + 1] + (6-k));
-      rlProb[k] = top - bot;
+      if (Ycor[iTrial, k]) {
+        top = prCorr;
+      } else {
+        top = prInco;
+      }
+      if (k > 1) {
+        bot = 1 - (k-1)*prInco/5;
+      }
+      top = fmax(bot, 1e-15);
+      bot = fmax(bot, 1e-15);
+      rlProb[k] = log(top) - log(bot);
     }
     
     // Update the log-likelihood for the current trial.
