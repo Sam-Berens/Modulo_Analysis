@@ -19,7 +19,7 @@ for iSubject=1:nSubs
         targetFolder = norm2MNI(G,subjectId,qFname);
         %load q image for left and right
         qDir = dir(targetFolder,filesep,'wq*.nii');
-        qPaths = cellfun(@(x) fullfile(x.folder,x.name),dDir,'UniformOutput',false);
+        qPaths = cellfun(@(x) fullfile(x.folder,x.name),qDir,'UniformOutput',false);
         l = qPaths(contains(qPaths,'r'));
         r = qPaths(contains(qPaths,'l')); %this is probs dangerous if the roi name changes
         lV =  spm_vol(l);
