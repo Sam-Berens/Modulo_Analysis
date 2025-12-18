@@ -1,24 +1,21 @@
-function [] = plotEffects(roiName)
-%get normal design matrix
-DataTable00 = getDataTable00;
+function [] = plotSimpleEffects(roiName,mdlOb,dataTb)
+% %get normal design matrix
+% DataTable00 = getDataTable00;
+% 
+% %select out apt roi
+% dX = DataTable00(...
+%     DataTable00.roiName==['l',roiName] | ...
+%     DataTable00.roiName==['r',roiName], :);
+% formula = 'zTemplate ~ coLocation*mCpNonc*hemisphere + (1|subjectId)';
+% mdl = fitlme(dX,formula);
 
-%select out apt roi
-dX = DataTable00(...
-    DataTable00.roiName==['l',roiName] | ...
-    DataTable00.roiName==['r',roiName], :);
-formula = 'zTemplate ~ coLocation*mCpNonc*hemisphere + (1|subjectId)';
-mdl = fitlme(dX,formula);
-
-meanPnonc = mean(dX(1:31,7));
+meanPnonc = mean(dataTb(1:31,7));
 % hlfdomain = 6- meanPnonc{1,1};
 % domain = linspace(hlfdomain,6)';
 % domain = domain - meanPnonc{1,1};
 domain = linspace(-2,4); 
 
-%return the fixed effect predictors coding table
-dX = designMatrix(mdl, 'Fixed');
-
-terms = mdl.CoefficientNames;
+terms = mdlOb.CoefficientNames;
 terms = terms';
 
 idx1 =  find(contains(terms,'coLocation'));
@@ -54,10 +51,10 @@ panel4(:,1) = 1 ;%make the intercept positive again
 
 panels = {panel1;panel2;panel3;panel4};
 pNonc = figure;
-titles = {'leftHemi';'rightHemi';'coLocated';'heteroLocated'};
+titles = {'Left';'Right';'coLocated';'heteroLocated'};
 for ii=1:4
 in = num2cell(panels{ii,:},1); 
-[~,est,low,upp] = getXEUL(mdl,in{:});
+[~,est,low,upp] = getXEUL(mdlOb,in{:});
 %add the subplot
 subplot(2,2,ii);
 plot(domain,est,'DisplayName','est');
@@ -79,3 +76,4 @@ set(ax, 'YLim', [-0.1 0.3]);   % set common limits
 %like 3 different ways the interaction can be off?
 
 
+return

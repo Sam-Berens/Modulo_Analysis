@@ -19,11 +19,7 @@ roiMask.size = size(roiMask.M);
 roiCoverage = zeros(size(roiMask.M));
 
 % Get EPI mask
-epiMask.name = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,subjectId);
-epiMask.V = spm_vol(epiMask.name);
-epiMask.M = spm_read_vols(epiMask.V);
-epiMask.idx = find(epiMask.M > 0.5);
-epiMask.size = size(epiMask.M);
+epiMask = getEpiMask(subjectId);
 
 % Spec the ROI mask in EPI space!
 epiRoi.M = zeros(size(epiMask.M));
