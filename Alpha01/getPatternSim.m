@@ -26,7 +26,8 @@ zTemplate1 = nan(nSubjects,1);
 zTemplate2 = nan(nSubjects,1);
 coLocation = [ones(nSubjects,1);(-1 * ones(nSubjects,1))];
 pCover = nan(nSubjects,1);
-patternSim = cell(nSubjects,1);
+patternSim1 = cell((nSubjects),1);
+patternSim2 = cell((nSubjects),1);
 for iSubject=1:numel(subjectId)
     cSubjectId = subjectId(iSubject);
     %reminder that data is [12,nvox], with the 1st 6 rows being As
@@ -41,6 +42,10 @@ for iSubject=1:numel(subjectId)
     aa = lR(1:6,1:6);
     ab_ba = R(7:12,1:6);
     bb = lR(7:12,7:12);
+    %flip these lower triangle values to be in the top
+    bb = permute(bb,[2,1]);
+    % add together colocal triangles
+    aa_bb = aa + bb;
 
     r1a = corr(H(lowerS),aa(lowerS));
     r1b = corr(H(lowerS),bb(lowerS));
@@ -49,14 +54,15 @@ for iSubject=1:numel(subjectId)
     z1 = mean([z1a,z1b]);
     r2 = corr(H(rmvDiag),ab_ba(rmvDiag)); 
     z2 = atanh(r2);
-    patternSim{iSubject,1} = R;
     zTemplate1(iSubject,1) = z1;
     zTemplate2(iSubject,1) = z2;
+    patternSim1 = aa_bb;
+    patternSim2 = ab_ba;
 end
 
 zTemplate = [zTemplate1;zTemplate2];
 subjectId = repmat(subjectId,[2,1]);
 pCover = repmat(pCover,[2,1]);
-patternSim =  repmat(patternSim,[2,1]);
+patternSim = cat(1,patternSim1,patternSim2); 
 PatternSim = table(coLocation,subjectId,pCover,zTemplate,patternSim);
 return
