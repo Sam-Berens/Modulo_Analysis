@@ -1,9 +1,20 @@
-function [] = zX0_makeQ(subjectId)
+function [] = zX0_makeQ()
 dirs.Data = '../../Data';
+G = 'G1';
+subjectIds = getSubjectIds(G);
+nSubs = numel(subjectIds);
+for iSubject=1:nSubs
+    subjectId = subjectIds(iSubject);
+    makeQ(subjectId)
+end
+return
+
+
+function [] = makeQ(subjectId,G)
 dirs.Subject = [dirs.Data,filesep,char(subjectId)];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 dirs.Mdl02 = [dirs.Alpha01,filesep,'Mdl02'];
-dirs.G1 = [dirs.Mdl02,filesep,'G1'];
+dirs.G1 = [dirs.Mdl02,filesep,G];
 if ~exist(dirs.Mdl02 ,'var')
     mkdir(dirs.Mdl02);
 end
@@ -18,7 +29,7 @@ nCentres = numel(epiMask.idx);
 [tM] = getAlpha01Ts(subjectId,epiMask);
 
 %% loop through searchlight centres to test produce q term from precursor to mdl02
-%reminder: these vectors are not the full size of the image matrix, they 
+%reminder: these vectors are not the full size of the image matrix, they
 %just correspond to the idxs which are 1 in the epiMask
 Q = nan(nCentres,1);
 B0 = nan(nCentres,1);
@@ -40,7 +51,7 @@ rH3 = srchIm(:,:,:,5);
 err = srchIm(:,:,:,6);
 
 %we're going to save all stats maps as nifti so we can norm q images
-%to mni space and so that we can do QA checks on the others  
+%to mni space and so that we can do QA checks on the others
 images = {Q,B0,B1,rH1,rH2,rH3,err};
 names = {'q','b0','b1','rH1','rH2','rH3','error'};
 for iIm=1:numel(images)
