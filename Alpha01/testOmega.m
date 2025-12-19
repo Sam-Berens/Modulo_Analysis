@@ -20,15 +20,16 @@ for iSubject=1:nSubs
         %load q image for left and right
         qDir = dir(targetFolder,filesep,'wq*.nii');
         qPaths = cellfun(@(x) fullfile(x.folder,x.name),qDir,'UniformOutput',false);
-        l = qPaths(contains(qPaths,'r'));
-        r = qPaths(contains(qPaths,'l')); %this is probs dangerous if the roi name changes
-        lV =  spm_vol(l);
-        lM = spm_read_vols(rl);
-        rV = spm_vol(r);
-        rM = spm_read_vols(rV);
-
-        %TO DO load and apply roi masks!
-
+       
+        % TO DO - 
+        % zX0 - make q
+        % zX1_... = make norm images loop into seperar function which is like
+        % getDataTable01... =  %TO DO load and apply roi masks! (using roi
+        % filtering helper function)(this is where you do left and right
+        % seperately ), also collecting up qs and ys and testing their corr
+        % put that in the datatable and then ttest on datatable across
+        % subjects
+      
 
         %then i guess you can collect up an array of q vals and Y coords for
         %each hemisphere
