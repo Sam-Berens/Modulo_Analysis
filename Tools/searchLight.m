@@ -1,5 +1,5 @@
-function [srchIm] = searchLight(image,mask,fh,radius)
-%image is a 4D volume with stimulus condition in the 4th dim
+function [srchIm] = searchLight(imageM,mask,fh,radius)
+%image is a 4D volume [x,y,z,nConditions]
 %mask is the mask for which you want to sample the image
 %fh is the figure handle for the function you want to apply to the
 %searchlight
@@ -7,6 +7,7 @@ function [srchIm] = searchLight(image,mask,fh,radius)
 nCentres = numel(mask.idx);
 %this gives us the bounds of the actual volume (should be 104x104x66)
 [maxX,maxY,maxZ] = size(mask.M);
+
 
 %% Make ball:
 [dx,dy,dz] = meshgrid(-radius:radius,-radius:radius,-radius:radius);
@@ -19,15 +20,12 @@ S = [sx,sy,sz];
 S = S - ((size(ball)-1)./2) - 1;
 
 nSlices = nargout(fh);
-srchIm = nan([size(image,1,2,3),nSlices]);
+srchIm = nan([size(imageM,1,2,3),nSlices]);
 
-for iSlice=1:numel(nSlices)
-result.(['x',(int2str(iSlice))]) = nan(size(image,1,2,3));
-end
-
-for iVox=1:nCentres %TO DO refactor to searchlight function which takes arg of im and function to apply, and a radius
-    %TO DO change testOmega() so it just loads the q images once for both
-    %hemisphere
+%flatten imageM so that we can easily index the search light area for all
+%conditions at once
+imageM = reshape(imageM, [], size(imageM,4));
+for iVox=1:nCentres
     %get sub coords for your central voxel
     [x,y,z] = ind2sub(mask.size,mask.idx(iVox));
     xyz = [x,y,z];
@@ -40,21 +38,28 @@ for iVox=1:nCentres %TO DO refactor to searchlight function which takes arg of i
         v(:,3) >= 1 & v(:,3) <= maxZ;
     v = v(inFOV,:);
 
-    %% Extract tStatistics for relevant voxels (remember image should be [x,y,z,nConditions]
-    cBall = image(v(:,1),v(:,2),v(:,3),:);
+    %% Extract searchlight-voxels from the input image,across all conditions
+    % cVals = arrayfun(@(x,y,z) imageM(x,y,z,:),v(:,1), v(:,2), v(:,3));
+    linIdx = sub2ind([maxX maxY maxZ], v(:,1), v(:,2), v(:,3));
+    cVals = imageM(linIdx,:);
     %apply your function to the searchlight
-    [varargout{1:nSlices}] = fh(cBall);
-    if isnan(varargout{:})
-        continue
+    fOfVals = fh(cVals);
+    
+    if iVox==1
+        nSlices = size(fOfVals,1);
+        %preallocate output based on how many result images the fh produces
+        srchIm = nan([size(imageM,1,2,3),nSlices]);
+    end 
+   
+    %this skips searchlights whos stats don't meet the p inequality
+    if isnan(fOfVals(1,1))
+        continue 
     end
-    %fill up all condition images at that location with result of function
-    for ir=1:numel(nSlices)
-        result.(iSlice)(x,y,z) = varargout{ir};
-    end
-end
 
-for ir=1:numel(nSlices)
-    srchIm(:,:,:,iSlice) = result.(['x',(int2str(iSlice))]);
+    %fill up all condition images at that location with result of function
+    for iSlice=1:numel(nSlices)
+        srchIm(x,y,z,iSlice) = fOfVals(iSlice,1);
+    end
 end
 
 return

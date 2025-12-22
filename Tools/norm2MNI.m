@@ -49,17 +49,9 @@ spm_jobman('run',SpmBatch);
 
 %Move new images into the subject's group folder created inside the first
 %src image's folder
-%load in the G template -> mni mm space .mat
-affineP = [pathTemplates,filesep,G,'_Template_6_2mni.mat'];
-M1 = load(affineP);
-M1 = M1.mni.affine;
 
 srcPaths = cellfun(@(x,y) [x,filesep,'w',y,'.nii'],imFolders,imNames,'UniformOutput',false);
 for ii=1:numel(imagePaths)
-    V = spm_vol(srcPaths{ii});
-    Y = spm_read_vols(V);
-    V.mat = M1; %replace the .mat with a matrix which aligns voxels to mni mm space instead of template mm space
-    spm_write_vol(V,Y);
     movefile(srcPaths{ii},targetPath);
 end
 

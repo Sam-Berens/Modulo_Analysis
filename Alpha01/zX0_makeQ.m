@@ -1,16 +1,17 @@
 function [] = zX0_makeQ()
-dirs.Data = '../../Data';
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
+subjectIds = char(subjectIds);
 for iSubject=1:nSubs
-    subjectId = subjectIds(iSubject);
-    makeQ(subjectId)
+    subjectId = subjectIds(iSubject,:);
+    makeQ(subjectId,G);
 end
 return
 
 
 function [] = makeQ(subjectId,G)
+dirs.Data = '../../Data';
 dirs.Subject = [dirs.Data,filesep,char(subjectId)];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 dirs.Mdl02 = [dirs.Alpha01,filesep,'Mdl02'];
@@ -20,9 +21,6 @@ if ~exist(dirs.Mdl02 ,'var')
 end
 
 epiMask = getEpiMask(subjectId);
-nCentres = numel(epiMask.idx);
-%this gives us the bounds of the actual volume (should be 104x104x66)
-[maxX,maxY,maxZ] = size(epiMask.M);
 
 %% Get a matrix of t-stats for all conditions
 %remember that a stims are stacked ontop of b stim
@@ -31,19 +29,19 @@ nCentres = numel(epiMask.idx);
 %% loop through searchlight centres to test produce q term from precursor to mdl02
 %reminder: these vectors are not the full size of the image matrix, they
 %just correspond to the idxs which are 1 in the epiMask
-Q = nan(nCentres,1);
-B0 = nan(nCentres,1);
-B1 = nan(nCentres,1);
-rH1 = nan(nCentres,1);
-rH2 = nan(nCentres,1);
-rH3 = nan(nCentres,1);
-err = nan(nCentres,1);
+% Q = nan(nCentres,1);
+% B0 = nan(nCentres,1);
+% B1 = nan(nCentres,1);
+% rH1 = nan(nCentres,1);
+% rH2 = nan(nCentres,1);
+% rH3 = nan(nCentres,1);
+% err = nan(nCentres,1);
 
 srchIm = searchLight(tM,epiMask,@estimQ, 3);
 
 B0 = srchIm(:,:,:,1);
 B1 = srchIm(:,:,:,2);
-Q = srchIm(:,:,:,2);
+Q = srchIm(:,:,:,3);
 %these are the similarity scores for each distance bin
 rH1 = srchIm(:,:,:,3);
 rH2 = srchIm(:,:,:,4);
@@ -67,8 +65,8 @@ for iIm=1:numel(images)
 end
 return
 
-function [varargout] = estimQ(tPatterns)
-tPatterns = reshape(tPatterns, [], size(tPatterns,4));
+function [allVals] = estimQ(tPatterns)
+%% expects flattened tPatterns which are [linIdx,condition]
 D = corr(tPatterns);
 lower = tril(true(6),-1);
 D = D(lower); %have checked that these are ordered the same as nchoose 
@@ -98,9 +96,9 @@ validP = P(1) > P(2) & P(2) > P(3);
 if validP
     [pHat, rhoHat, err] = fitNonlinMdl(I,P);
     allVals = [pHat(:); rhoHat(:); err(:)];
-    varargout = num2cell(allVals);
+    
 else 
-     varargout(1:7,1) = {nan};
+     allVals = nan(7,1);
 end
 return
 
