@@ -146,7 +146,7 @@ Timgs.M = M;
 
 %% Check mask size/alignment (only if info exists)
 if maskGiven
-    if ~isequal(Timgs.V(1).dim, Mask.size(1:3))
+    if ~isequal(Timgs.V(1).dim, Mask.size)
         error('The mask and the t-images are not the same size!');
     end
     if isfield(Mask,'V') && isfield(Mask.V,'mat')
