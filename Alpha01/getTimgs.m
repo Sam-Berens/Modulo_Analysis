@@ -1,5 +1,5 @@
-function Timgs = getTimgs(subjectId, Mask)
-% GETTIMGS  Load and optionally mask first-level SPM T-images for a subject.
+function [Timgs] = getTimgs(subjectId, Mask)
+% GETTIMGS Load and optionally mask first-level SPM T-images for a subject.
 %
 %   Timgs = GETTIMGS(subjectId)
 %   Timgs = GETTIMGS(subjectId, Mask)
