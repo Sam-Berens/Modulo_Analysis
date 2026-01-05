@@ -1,32 +1,78 @@
 function [Data,pCover] = getTpatterns_EpiRes(G,subjectId,roiId)
+% GETTPATTERNS_EPIRES  Extract Alpha00 T-image patterns at EPI resolution.
+%
+%   [Data, pCover] = GETTPATTERNS_EPIRES(G, subjectId, roiId)
+%
+%   Loads a fixed set of first-level SPM T-statistic images for a subject
+%   (6 integers) and extracts voxelwise T-values within an ROI represented
+%   in EPI space ("EPI resolution").
+%
+%   This function is intended for pipelines where an ROI defined in native
+%   space is mapped/resampled into the subject's EPI grid (or where an EPI
+%   ROI already exists). The output is a matrix with one row per in-ROI EPI
+%   voxel and one column per T-image/condition.
+%
+%   INPUTS
+%   ------
+%   G : char | string
+%       Group identifier used by the data pipeline (e.g., 'G0', 'G1').
+%
+%   subjectId : char | string
+%       Subject identifier corresponding to a subject folder in ../../Data.
+%
+%   roiId : char | string
+%       ID of the ROI. The ROI mask is expected to be located via the
+%       pipeline helper (e.g., getNativeRoiPath) and mapped into EPI space.
+%
+%   OUTPUTS
+%   -------
+%   Data : double [nVox × nT]
+%       Matrix of T-values extracted within the EPI-space ROI. Rows
+%       correspond to in-ROI voxels, columns correspond to T-images/
+%       conditions.
+%
+%   pCover : double
+%       ROI coverage metric: the proportion of ROI voxels for which
+%       coverage is non-zero (or above a small threshold) when intersected
+%       with the EPI mask.
+%
+%   NOTES
+%   -----
+%   - This function assumes that the ROI and T-images are defined on
+%     compatible voxel grids. TGhe first three dimensions of the T-image
+%     volumes must match the EPI grid size.
+%   - Requires SPM on the MATLAB path.
+%
+%   EXAMPLE
+%   -------
+%   [Data, pCover] = getTpatterns_EpiRes('G1','eade18a5','lHippAnt');
+%
+%   See also GETTIMGS, GETEPIMASK, SPM_VOL, SPM_READ_VOLS.
+
+%% Make sure subjectId is a char
 if iscategorical(subjectId)
     subjectId = char(subjectId);
 end
 
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
-dirs.Subject = [dirs.Data,filesep,subjectId];
-dirs.EPI = [dirs.Subject,filesep,'EPI'];
-dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
-
-
-% Get ROI mask
-roiPath = getNativeRoiPath(G,subjectId,roiId);
-roiMask.V = spm_vol(roiPath);
+%% Get the ROI mask
+roiMask.name = getNativeRoiPath(G,subjectId,roiId);
+roiMask.V = spm_vol(roiMask.name);
 roiMask.M = spm_read_vols(roiMask.V);
 roiMask.size = size(roiMask.M);
 
-% Spec the ROI coverage in ROI space
-roiCoverage = zeros(size(roiMask.M));
+%% Preallocate the ROI coverage in ROI space
+roiCoverage = zeros(roiMask.size);
 
-% Get EPI mask
+%% Get EPI mask
 epiMask = getEpiMask(subjectId);
 
-% Spec the ROI mask in EPI space!
+%% Preallocate the ROI mask in EPI space!
 epiRoi.M = zeros(size(epiMask.M));
+epiRoi.size = epiMask.size;
 
-% Loop through the epiMask to:
-%   1) populate epiRoi by samppling from roiMask
-%   2) populate roiCoverage by keeping track of where we have sampled from
+%% Loop through the epiMask to:
+%  1) populate epiRoi by sampling from roiMask
+%  2) populate roiCoverage by keeping track of where we have sampled from
 for iVoxel = 1:numel(epiMask.idx)
 
     % Step 1:
@@ -45,19 +91,26 @@ for iVoxel = 1:numel(epiMask.idx)
     end
 end
 
-% Get the masked EPI voxel indecies
+%% Compute coverage stats
+pCover = sum(roiCoverage>(1e-6),'all')/sum(roiMask.M>0.5,'all');
+
+%% Get the masked EPI voxel indecies
 epiRoi.idx = find(epiRoi.M>0.5);
 
-% Get a matrix of t-stats
-Data = nan(numel(epiRoi.idx),6);
-for iStim = 1:6
-    stimId = ['i',num2str(iStim-1)];
-    tFn = [dirs.Alpha00,filesep,stimId,filesep,'spmT_0001.nii'];
-    tV = spm_vol(tFn);
-    tM = spm_read_vols(tV);
-    Data(:,iStim) = tM(epiRoi.idx);
+%% Get the t-images
+Timgs = getTimgs(subjectId); % Note we don't mask here
+if ~isequal(epiRoi.size,Timgs.size)
+    error('The EPI mask and the t-images are not the same size!');
+end
+if isfield(epiMask,'V') && isfield(epiMask.V,'mat')
+    if ~isequal(epiMask.V.mat, Timgs.V(1).mat)
+        error('The EPI mask and the t-images are not aligned!');
+    end
 end
 
-% Compute coverage stats
-pCover = sum(roiCoverage>(1e-6),'all')/sum(roiMask.M,'all');
+%% Format the data
+n0 = prod(epiRoi.size);
+nT = numel(Timgs.P);
+Idx = n0*(0:(nT-1)) + epiRoi.idx;
+Data = Timgs.M(Idx);
 return
