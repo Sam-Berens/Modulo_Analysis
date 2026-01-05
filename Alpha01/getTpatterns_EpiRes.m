@@ -7,17 +7,17 @@ if iscategorical(subjectId)
     subjectId = char(subjectId);
 end
 
-%% Get ROI mask
-roiPath = getNativeRoiPath(G,subjectId,roiId);
-roiMask.V = spm_vol(roiPath);
+%% Get the ROI mask
+roiMask.name = getNativeRoiPath(G,subjectId,roiId);
+roiMask.V = spm_vol(roiMask.name);
 roiMask.M = spm_read_vols(roiMask.V);
 roiMask.size = size(roiMask.M);
 
 %% Preallocate the ROI coverage in ROI space
-roiCoverage = zeros(size(roiMask.M));
+roiCoverage = zeros(roiMask.size);
 
 %% Get EPI mask
-[epiMask] = getEpiMask(subjectId);
+epiMask = getEpiMask(subjectId);
 
 %% Preallocate the ROI mask in EPI space!
 epiRoi.M = zeros(size(epiMask.M));
@@ -52,6 +52,8 @@ epiRoi.idx = find(epiRoi.M>0.5);
 
 %% Get the t-images
 Timgs = getTimgs(subjectId); % Note we don't mask here
+
+%% Format the data
 n0 = prod(epiRoi.size);
 nT = numel(Timgs.P);
 Idx = n0*(0:(nT-1)) + epiRoi.idx;

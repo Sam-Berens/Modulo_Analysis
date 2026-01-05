@@ -1,4 +1,16 @@
-function [Data] = getTpatterns_RoiRes(G,subjectId,roiId,dirs)
+function [Data] = getTpatterns_RoiRes(G,subjectId,roiId)
+
+%TODO - only neccersary if coverage in epi version is bad anywhere
+%but this needs updating to work with the new script
+
+if iscategorical(subjectId)
+    subjectId = char(subjectId);
+end
+
+dirs.Data = ['..',filesep,'..',filesep,'Data'];
+dirs.Subject = [dirs.Data,filesep,subjectId];
+dirs.EPI = [dirs.Subject,filesep,'EPI'];
+dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
 
 %% Load in volume headers and data
 mask.V = spm_vol(dirs.maskPath);
@@ -6,6 +18,7 @@ mask.M = spm_read_vols(mask.V);
 %%Step where you convert roiId into and actual roi
 roiPath = getNativeRoiPath(G,subjectId,roiId); 
 roi.V = spm_vol(roiPath);
+roi.M = spm_read_vols(roi.V );
 
 %loop through regressors to build a t-statistic volume which is shaped with
 %stimulus in the 4th dim instead of time
@@ -32,15 +45,14 @@ Coverage = ...
     spm_sample_vol(mask.V,...
     Vx(1,:),Vx(2,:),Vx(3,:),-5);
 
-%% Sample from t Statistics over regressors using Xyz
+% Interpolate what the value of tStat-EPI-vol would be at each roi voxel 
 nStims = 6;
 Data = nan(nStims,numel(I));
 for iStim = 1:nStims
     cTs = ...
         spm_sample_vol(t.V{iStim,1},...
         Vx(1,:),Vx(2,:),Vx(3,:),-5);
-    %remove any values outside the epiMask
-    Data(iStim,:) = cTs(mask.M);
+    Data(iStim,:) = cTs;
 end
 
 %% Censor Data with Coverage
