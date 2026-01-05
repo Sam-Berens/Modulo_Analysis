@@ -9,7 +9,7 @@ function [Timgs] = getTimgs(subjectId, Mask)
 %   into a single 4D array.
 %
 %   The function assumes a factorial structure with two places (a, b) and
-%   six intervals (0–5), yielding 12 T-images in total. Images are loaded
+%   six integers (0–5), yielding 12 T-images in total. Images are loaded
 %   from (e.g.):
 %    ../../Data/subjectId/Analysis/Alpha01/a0/spmT_0001.nii
 %
