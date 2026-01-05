@@ -1,10 +1,10 @@
 function [Data,pCover] = getTpatterns_RoiRes(G,subjectId,roiId)
-% GETTPATTERNS_ROIRES  Extract masked T-image patterns at ROI resolution.
+% GETTPATTERNS_ROIRES  Extract Alpha01 T-image patterns at ROI resolution.
 %
-%   [Data, pCover] = GETTPATTERNS_ROIRES(G, subjectId, roiName)
+%   [Data, pCover] = GETTPATTERNS_ROIRES(G, subjectId, roiId)
 %
 %   Loads a fixed set of first-level SPM T-statistic images for a subject
-%   (typically 12 images: two places × six intervals) and samples them into
+%   (typically 12 images: two places × six integers) and samples them into
 %   the voxel grid of a native-space ROI mask ("ROI resolution"). The
 %   output is a matrix of T-values with one row per ROI voxel and one
 %   column per T-image/condition.
@@ -21,8 +21,8 @@ function [Data,pCover] = getTpatterns_RoiRes(G,subjectId,roiId)
 %   subjectId : char | string
 %       Subject identifier corresponding to a subject folder in ../../Data.
 %
-%   roiName : char | string
-%       Name of the ROI. The ROI mask is expected to be located via the
+%   roiId : char | string
+%       ID of the ROI. The ROI mask is expected to be located via the
 %       pipeline helper (e.g., getNativeRoiPath).
 %
 %   OUTPUTS

@@ -1,10 +1,10 @@
 function [Data,pCover] = getTpatterns_EpiRes(G,subjectId,roiId)
-% GETTPATTERNS_EPIRES  Extract masked T-image patterns at EPI resolution.
+% GETTPATTERNS_EPIRES  Extract Alpha01 T-image patterns at EPI resolution.
 %
-%   [Data, pCover] = GETTPATTERNS_EPIRES(G, subjectId, roiName)
+%   [Data, pCover] = GETTPATTERNS_EPIRES(G, subjectId, roiId)
 %
 %   Loads a fixed set of first-level SPM T-statistic images for a subject
-%   (typically 12 images: two places × six intervals) and extracts
+%   (typically 12 images: two places × six integers) and extracts
 %   voxelwise T-values within an ROI represented in EPI space ("EPI
 %   resolution").
 %
@@ -21,8 +21,8 @@ function [Data,pCover] = getTpatterns_EpiRes(G,subjectId,roiId)
 %   subjectId : char | string
 %       Subject identifier corresponding to a subject folder in ../../Data.
 %
-%   roiName : char | string
-%       Name of the ROI. The ROI mask is expected to be located via the
+%   roiId : char | string
+%       ID of the ROI. The ROI mask is expected to be located via the
 %       pipeline helper (e.g., getNativeRoiPath) and mapped into EPI space.
 %
 %   OUTPUTS
