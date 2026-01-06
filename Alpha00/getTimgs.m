@@ -14,7 +14,7 @@ function [Timgs] = getTimgs(subjectId, Mask)
 %
 %   INPUTS
 %   ------
-%   subjectId : char | string
+%   subjectId : categorical | char | string
 %       Subject identifier corresponding to a directory name in the Data
 %       folder (e.g., 'eade18a5').
 %
@@ -93,6 +93,10 @@ elseif nargin < 1
     error('Too few inputs!');
 end
 
+if iscategorical(subjectId)
+    subjectId = char(subjectId);
+end
+
 %% Normalise Mask if it is provided as a matrix (not a struct)
 if maskGiven && ~isstruct(Mask)
     Mraw = Mask;
@@ -142,7 +146,7 @@ Timgs.M = M;
 
 %% Check mask size/alignment (only if info exists)
 if maskGiven
-    if ~isequal(Timgs.V(1).dim, Mask.size)
+    if ~isequal(Mask.size, Timgs.V(1).dim)
         error('The mask and the t-images are not the same size!');
     end
     if isfield(Mask,'V') && isfield(Mask.V,'mat')
