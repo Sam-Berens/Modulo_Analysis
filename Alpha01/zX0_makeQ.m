@@ -16,7 +16,7 @@ dirs.Subject = [dirs.Data,filesep,char(subjectId)];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 dirs.Mdl02 = [dirs.Alpha01,filesep,'Mdl02'];
 dirs.G1 = [dirs.Mdl02,filesep,G];
-if ~exist(dirs.Mdl02 ,'var')
+if ~exist(dirs.Mdl02 ,'dir')
     mkdir(dirs.Mdl02);
 end
 
@@ -24,38 +24,29 @@ epiMask = getEpiMask(subjectId);
 
 %% Get a matrix of t-stats for all conditions
 %remember that a stims are stacked ontop of b stim
-[tM] = getAlpha01Ts(subjectId,epiMask);
+[tImgs] = getTimgs(subjectId,epiMask);
 
 %% loop through searchlight centres to test produce q term from precursor to mdl02
-%reminder: these vectors are not the full size of the image matrix, they
-%just correspond to the idxs which are 1 in the epiMask
-% Q = nan(nCentres,1);
-% B0 = nan(nCentres,1);
-% B1 = nan(nCentres,1);
-% rH1 = nan(nCentres,1);
-% rH2 = nan(nCentres,1);
-% rH3 = nan(nCentres,1);
-% err = nan(nCentres,1);
-
-srchIm = searchLight(tM,epiMask,@estimQ, 3);
-
+[Y,N] = searchlight3D(3,@estimQ,epiMask,tImgs); %reminder N is the volume of each searchlight
+clear tImgs; %this is to save memory since we dont need it anymore
+%we're going to save all stats maps as nifti so we can norm q images
+%to mni space and so that we can do QA checks on the others
 B0 = srchIm(:,:,:,1);
 B1 = srchIm(:,:,:,2);
 Q = srchIm(:,:,:,3);
 %these are the similarity scores for each distance bin
-rH1 = srchIm(:,:,:,3);
-rH2 = srchIm(:,:,:,4);
-rH3 = srchIm(:,:,:,5);
-err = srchIm(:,:,:,6);
+rH1 = srchIm(:,:,:,4);
+rH2 = srchIm(:,:,:,5);
+rH3 = srchIm(:,:,:,6);
+%error of the model
+err = srchIm(:,:,:,7);
 
-%we're going to save all stats maps as nifti so we can norm q images
-%to mni space and so that we can do QA checks on the others
 images = {Q,B0,B1,rH1,rH2,rH3,err};
 names = {'q','b0','b1','rH1','rH2','rH3','error'};
 for iIm=1:numel(images)
     im.M = nan(size(epiMask.M,[1,2,3]));
     im.M(epiMask.idx) = images{iIm};
-    im.V = epiMask.V; %TO DO - change data type to be approrpiate not binary
+    im.V = epiMask.V;
     im.V.dt(1) = 64;
     label = names{iIm};
     %save to their mdl02 folder
@@ -112,6 +103,8 @@ A = [
     0,0,1];
 c = [0;0;7];
 p0 = [0.2;1;1];
-[pHat,err] = fmincon(costFnc,p0,A,c);
+
+opts = optimoptions('fmincon','Display','off','Algorithm','sqp');
+[pHat,err] = fmincon(costFnc,p0,A,c,[],[],[],[],[],opts);
 rhoHat = rhoHatFnc(pHat);
 return
