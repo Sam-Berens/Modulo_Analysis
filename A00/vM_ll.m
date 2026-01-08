@@ -17,7 +17,6 @@ function [lq] = vM_ll(b,x,theta)
 theta = theta(~isnan(theta)); %chop off the nan attempts
 nTry = size(theta,1);
 cumP = 0; % cumulative probability 
-lq = 0;
 for k = 1:nTry
     t = theta(k);
     sResp = abs(t-angles)<1e-6;
@@ -31,7 +30,6 @@ for k = 1:nTry
     cumP = cumP + cP;
 
 end
-lq = sum(lq,2); %dim 2 is attempts dim 1 is samps
 if ~isfinite(lq)
     warning('Non-finite log-likelihood detected');
 end

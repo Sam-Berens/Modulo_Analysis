@@ -1,4 +1,4 @@
-function [DataTabel01] = getWAIC(model)
+function [modelTb] = getWAIC(model)
 %add nicer checking of below
 model = string(model);
 %construct model-specific function names:
@@ -7,10 +7,7 @@ if strcmp(model,'vonMises')
 elseif strcmp(model,'Binomial')
     f = @BN_ll;
 end
-
-
 model = char(model);
-
 G ='G0';
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
 dirs.model = fullfile(dirs.Data,'_Group','A00',model);
@@ -33,11 +30,11 @@ for iSub=1:nSubs
     tDataFn = fullfile(dirs.Data,char(cSubId),'Analysis','A00','InputData.json');
     trialData = jsondecode(fileread(tDataFn));
     Lls = makeLls(f,trialData,cPSs);
-    %save these maybe?
-    % llFn= extractBefore(string(tDataFn),"Input");
-    % llFn = [char(llFn),model,'LLs.mat'];
-    llFn = fullfile(dirs.model,char(cSubId),'LLs.mat');
-    % save(llFn,"LLs"); %SAVE IN SUBJECT FOLDER NOT GROUP
+    
+    %save likelihoods
+    llFn= extractBefore(string(tDataFn),"Input");
+    llFn = [char(llFn),model,filesep,'LLs.mat'];
+    save(llFn,"Lls");
 
     %step 2: pointwise lppd (log of the mean of likelihood)
     %either we unlog everything again or we dont log in the last step?
@@ -60,7 +57,9 @@ for iSub=1:nSubs
 end
 
 %Format /save table , add subIDs etc
-table(subjectIds,WAIC,seElpd,seWAIC);
+modelTb = table(subjectIds,WAIC,seElpd,seWAIC);
+modelTb.Properties.VariableNames = {'subjectId',...
+[model,'_WAIC'],[model,'_seElpd'],[model,'_seWAIC']};
 
 return
 

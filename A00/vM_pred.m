@@ -1,11 +1,8 @@
 function [pmf,angles] = vM_pred(x,b)
-% MODIFIED TO TAKE matrix b
-% spth_pred.m
+%MODIFIED VERSION OF spth_pred.m 
+%spth_pred.m
 % Sam Berens (s.berens@sussex.ac.uk)
 % 24/03/2025
-%
-% Syntax:  [pmf, angles] = spth_pred(x, b)
-%
 % Description:
 %    Predicts the probability mass function (pmf) over discrete angle bins
 %    using a Softplus-tanh model with the von Mises distribution. The
@@ -28,9 +25,9 @@ function [pmf,angles] = vM_pred(x,b)
 %    [pmf, angles] = spth_pred(x, [1, 0.5]);
 %
 % Subfunctions:
-%    r2k   - Converts the Softplus-tanh output to a von Mises concentration
-%            parameter k.
-%    vmpdf - Computes the von Mises probability density function.
+%    r2k   - Converts the vector of Softplus-tanh outputs to vector of von Mises concentration
+%            parameters (k).
+%    vmpdf - Computes a matrix of von Mises probability density functions.
 %
 % See also: spth_nll
 %
@@ -44,7 +41,6 @@ pmf = pdf./sum(pdf,2);
 return
 
 function [k] = r2k(r)
-%MODIFIED FOR OPTIMISATION OVER LARGE VECTORS
 % r2k converts the Softplus-tanh output values to a von Mises concentration
 % parameter k.
 %
