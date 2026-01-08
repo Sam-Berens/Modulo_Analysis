@@ -8,7 +8,7 @@ function [lq] = BN_ll(b,x,theta)
 
 theta = theta(~isnan(theta)); %chopp off the nan attempts
 nTry = size(theta,1);
-prNorm = 1;
+norm = 1;
 lq = 0;
 for k = 1:nTry
     t = theta(k);
@@ -18,9 +18,9 @@ for k = 1:nTry
     cP = pmf(linidx); %current likelihood of model given the observation / probability of data given the model
     prInco = pmf(:,1);
     if k>1
-        prNorm = 1 - ((k-1).*prInco/5);
+        norm = 1 - ((k-1).*prInco/5);
     end
-    lq = lq + log(cP) - log(prNorm);  %sum across attmepts to get log of pr/likelihood for each trial
+    lq = lq + log(cP) - log(norm);  %sum across attmepts to get log of pr/likelihood for each trial
 end
 
 
