@@ -4,8 +4,8 @@ if exist('Datatable01.mat','file')
     return
 end
 
-vMtb = getWAIC('vonMises');
 bNtb = getWAIC('Binomial');
-datatable01 = innerjoin(vMtb,bNtb);
+vMtb = getWAIC('vonMises');
+datatable01 = join(vMtb,bNtb);
 save('Datatable01.mat','datatable01');
 return
