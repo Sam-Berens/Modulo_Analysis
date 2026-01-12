@@ -45,7 +45,7 @@ for iSubject = 1:nSubjects
 end
 
 % Create and execute the SPM batch
-SpmBatch = [{} {} {}];
+SpmBatch = {};
 SpmBatch{1}.spm.tools.dartel.mni_norm.template = {filenameTemplate};
 SpmBatch{1}.spm.tools.dartel.mni_norm.data.subjs.flowfields = fnsFFs;
 SpmBatch{1}.spm.tools.dartel.mni_norm.data.subjs.images = {fnsT1s,fnsC1s,fnsC2s};

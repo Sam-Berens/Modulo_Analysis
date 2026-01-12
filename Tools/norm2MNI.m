@@ -17,8 +17,7 @@ function [] = norm2MNI(G,imgPath)
 %
 %   IMGPATH : char | string
 %       Relative path (from each subject directory) to the images
-%       that should be normalised to MNI space. These images are
-%       assumed to already be in DARTEL (template) space.
+%       that should be normalised to MNI space.
 %
 %   DIRECTORY ASSUMPTIONS
 %   ---------------------
