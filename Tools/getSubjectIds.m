@@ -7,7 +7,8 @@ function [subjectId] = getSubjectIds(G)
 %
 %   Group IDs:
 %       'G0' - All subjects found in the Data directory (default).
-%       'G1' - Subset of subjects with specific exclusions applied.
+%       'G1' - Subset of subjects included for analysis.
+%       'G2' - Subset of subjects classified as strong generalisers.
 %
 %   If G is not provided, the function defaults to 'G0'.
 %
@@ -43,6 +44,11 @@ switch G
         return
     case 'G1'
         toKeep = ~ismember(subjectId,{'eade18a5'});
+        subjectId = subjectId(toKeep);
+    case 'G2'
+        pNonc = get_pNonc('G1');
+        pNonc = pNonc(pNonc.pNonc>5,:);
+        toKeep = ismember(subjectId,cellstr(pNonc.subjectId));
         subjectId = subjectId(toKeep);
     otherwise
         error('Unrecognised group ID.');
