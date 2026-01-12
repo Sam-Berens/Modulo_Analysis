@@ -14,10 +14,10 @@ function [] = makeQ(subjectId,G)
 dirs.Data = '../../Data';
 dirs.Subject = [dirs.Data,filesep,char(subjectId)];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
-dirs.Mdl02 = [dirs.Alpha01,filesep,'Mdl02'];
-dirs.G1 = [dirs.Mdl02,filesep,G];
-if ~exist(dirs.Mdl02 ,'dir')
-    mkdir(dirs.Mdl02);
+dirs.Mdl01 = [dirs.Alpha01,filesep,'Mdl01'];
+dirs.G1 = [dirs.Mdl01,filesep,G];
+if ~exist(dirs.Mdl01 ,'dir')
+    mkdir(dirs.Mdl01);
 end
 
 epiMask = getEpiMask(subjectId);
@@ -27,7 +27,7 @@ epiMask = getEpiMask(subjectId);
 [tImgs] = getTimgs(subjectId,epiMask);
 
 yDepth = 4; %this is because the axis model has 3 params plus the error term
-%% loop through searchlight centres to test produce q term from precursor to mdl02
+%% loop through searchlight centres to test produce q term from precursor to mdl01
 Y = searchlight3D(3,@qFunc,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 
 %we're going to save all stats maps as nifti so we can norm q images
@@ -37,16 +37,19 @@ B1 = Y(:,:,:,2);
 Q = Y(:,:,:,3);
 %error of the model
 err = Y(:,:,:,4);
+%images needed for model 2
+lQ = log(Q);
+qMask = ~isnan(Q);
 
-images = {Q,B0,B1,err};
-names = {'q','b0','b1','error'};
+images = {Q,B0,B1,err,lQ,qMask};
+names = {'q','b0','b1','error','lQ','qMask'};
 for iIm=1:numel(images)
     im.M = images{iIm};
     im.V = epiMask.V;
     im.V.dt(1) = 64;
     label = names{iIm};
-    %save to their mdl02 folder
-    im.V.fname = [dirs.Mdl02,filesep,label,'.nii'];
+    %save to their mdl01 folder
+    im.V.fname = [dirs.Mdl01,filesep,label,'.nii'];
     im.V.descrip = 'Statistic map of nonlinear pattern–RDM fit model';
     spm_write_vol(im.V,im.M);
 end
