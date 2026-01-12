@@ -1,11 +1,11 @@
-function [Y,N] = searchlight3D(r,f,Mask,X,searchID)
+function [Y,N] = searchlight3D(r,f,Mask,X,yDepth,searchID)
 
 %% Check inputs
-if nargin < 4
+if nargin < 5
     error('Not enough inputs.');
-elseif nargin == 4
-    waitmssg = 'Running searchlight ...';
 elseif nargin == 5
+    waitmssg = 'Running searchlight ...';
+elseif nargin == 6
     waitmssg = ['Running searchlight: ',searchID];
 else
     error('Too many inputs');
@@ -49,7 +49,7 @@ end
 Ball = makeBall(r);
 
 %% Loop through the Mask to apply the searchlight
-Y = nan(Mask.size);
+Y = nan([Mask.size,yDepth]);
 N = nan(Mask.size);
 fh = waitbar(0,waitmssg);
 for ii = 1:Mask.nIdx
@@ -81,11 +81,12 @@ for ii = 1:Mask.nIdx
     end
 
     % Index all patterns (in M)
-    Idx = X.nVox*(0:(X.nPttrns-1)) + Hood;
-    M = X.M(Idx);
+    IdxRead = X.nVox*(0:(X.nPttrns-1)) + Hood;
+    M = X.M(IdxRead);
 
     % Apply the function
-    Y(Mask.idx(ii)) = f(M);
+    IdxWrit = X.nVox*(0:(yDepth-1)) + Mask.idx(ii);
+    Y(IdxWrit) = f(M);
     N(Mask.idx(ii)) = n;
 
     % Update the waitbar
