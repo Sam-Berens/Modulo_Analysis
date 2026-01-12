@@ -1,9 +1,9 @@
 function [] = z02_Tcons(G)
 subjectIds = getSubjectIds(G);
 dirs.Data = ['..',filesep,'..',filesep,'Data'];
-for iSubject=1:numel(subjectIds)
+for iSubject = 1:numel(subjectIds)
 
-    cId = subjectIds{iSubject};
+    cId = char(subjectIds(iSubject));
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];
 

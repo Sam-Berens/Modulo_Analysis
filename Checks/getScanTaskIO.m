@@ -4,7 +4,7 @@ subjectIds = getSubjectIds(G);
 TaskIO = [];
 ScanDiagTable = [];
 for iSubject = 1:numel(subjectIds)
-    [T,S] = loadData(subjectIds{iSubject});
+    [T,S] = loadData(char(subjectIds(iSubject)));
     if ~isempty(T)
         TaskIO = [TaskIO;T]; %#ok<*AGROW>
         ScanDiagTable = [ScanDiagTable;S];
@@ -16,7 +16,7 @@ scanTauResids = cell2mat(cellfun(@(r,s)r(s),...
 ScanDiag.Table = ScanDiagTable;
 ScanDiag.tauResids = scanTauResids;
 sIdsToDo = subjectIds(...
-    ~ismember(categorical(subjectIds),unique(TaskIO.SubjectId)));
+    ~ismember(subjectIds,unique(TaskIO.SubjectId)));
 
 return
 

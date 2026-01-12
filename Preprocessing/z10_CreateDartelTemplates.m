@@ -28,7 +28,7 @@ end
 % Subject loop to populate inputs and create folder for the flow-fields
 for iSubject = 1:nSubjects
 
-    pathSubject = [pathData,filesep,subjectIds{iSubject}];
+    pathSubject = [pathData,filesep,char(subjectIds(iSubject))];
     pathStructural = [pathSubject,filesep,'Structural'];
 
     % Populate FileNames_rc*:
@@ -89,7 +89,7 @@ spm_jobman('run',SpmBatch);
 movedTemplate = false;
 for iSubject = 1:nSubjects
 
-    pathSubject = [pathData,filesep,subjectIds{iSubject}];
+    pathSubject = [pathData,filesep,char(subjectIds(iSubject))];
     pathStructural = [pathSubject,filesep,'Structural'];
     pathFlowFields = [pathStructural,filesep,G];
     dirsTarget = dir([pathStructural,filesep,'u_rc1_*.nii']);

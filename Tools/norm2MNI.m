@@ -98,7 +98,7 @@ for iSubject = 1:nSubjects
         [paths.flowfields{iSubject},filesep,'u_*.nii']);
     if numel(dirList) ~= 1
         error('Unexpected number of flowfields for %s!',...
-            char(subjectIds{iSubject}));
+            char(subjectIds(iSubject)));
     end
     fns.flowfields{iSubject} = [dirList.folder,filesep,dirList.name];
 end

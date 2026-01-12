@@ -27,7 +27,7 @@ fnsC2s = cell(nSubjects,1);
 
 % Populate filename arrays for flow-fields and images to norm
 for iSubject = 1:nSubjects
-    pathSubject = [pathData,filesep,subjectIds{iSubject}];
+    pathSubject = [pathData,filesep,char(subjectIds(iSubject))];
     pathStructural = [pathSubject,filesep,'Structural'];
     pathFF = [pathStructural,filesep,G];
 
@@ -58,7 +58,7 @@ spm_jobman('run',SpmBatch);
 
 % Loop to move new images
 for iSubject = 1:nSubjects
-    pathSubject = [pathData,filesep,subjectIds{iSubject}];
+    pathSubject = [pathData,filesep,char(subjectIds(iSubject))];
     pathStructural = [pathSubject,filesep,'Structural'];
     pathFF = [pathStructural,filesep,G];
     movefile([pathStructural,filesep,'w*.nii'],pathFF);

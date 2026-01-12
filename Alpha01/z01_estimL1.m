@@ -46,7 +46,7 @@ subjectIds = getSubjectIds(G);
 for iSubject = 1:numel(subjectIds)
 
     % Set required directory paths
-    cId = subjectIds{iSubject};
+    cId = char(subjectIds(iSubject));
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.EPI = [dirs.Subject,filesep,'EPI'];
     dirs.Y = [dirs.EPI,filesep,'2_Temporal'];

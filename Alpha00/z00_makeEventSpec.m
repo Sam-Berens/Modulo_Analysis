@@ -37,7 +37,7 @@ subjectIds = getSubjectIds(G);
 for iSubject = 1:numel(subjectIds)
 
     % Set required directory paths
-    cId = subjectIds{iSubject};
+    cId = char(subjectIds(iSubject));
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.Behav = [dirs.Subject,filesep,'Behavioural'];
     dirs.Alpha00 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha00'];

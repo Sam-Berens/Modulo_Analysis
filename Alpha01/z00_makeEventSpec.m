@@ -45,7 +45,7 @@ subjectIds = getSubjectIds(G);
 for iSubject = 1:numel(subjectIds)
 
     % Set required directory paths
-    cId = subjectIds{iSubject};
+    cId = char(subjectIds(iSubject));
     dirs.Subject = [dirs.Data,filesep,cId];
     dirs.Behav = [dirs.Subject,filesep,'Behavioural'];
     dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
@@ -61,12 +61,11 @@ for iSubject = 1:numel(subjectIds)
     TaskIO = STIO.TaskIO;
     runIds = unique(TaskIO.iRun)';
     for iStim = stimIds'
-        %positions to loop through
         position = 'AB';
-        for iPos=1:2
+        for iPos = 1:2
             X = position(iPos);
             x = lower(position(iPos));
-            %rgi stands for regressor of intrest
+            % rgi stands for regressor of interest
             rgi = sprintf('%s%i',x,iStim);
             % Set and create the output directory (if needed)
             dirs.Target = [dirs.Alpha01,filesep,rgi];

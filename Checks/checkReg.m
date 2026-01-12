@@ -9,8 +9,8 @@ end
 cd ../..;
 cd Data/;
 
-for iSubject = 1:1:size(subjectIds,1)
-    getAndDisplay(subjectIds{iSubject,1});
+for iSubject = 1:size(subjectIds,1)
+    getAndDisplay(char(subjectIds(iSubject,1)));
     pause();    
 end
 cd ../Scripts/Checks;
@@ -27,16 +27,16 @@ cd(subjectDir);
 cd Structural;
 imgsToDisplay{1,1} = dir('m_*.nii');
 imgsToDisplay{1,1} = [pwd,filesep,imgsToDisplay{1,1}.name];
-cd ..; %now youre in the subject folder
+cd ..;
 
 %% Get mean EPI in FilesNames{2,1}:
 cd EPI;
 imgsToDisplay{2,1} = dir('meanu_*.nii');
 imgsToDisplay{2,1} = [pwd,filesep,imgsToDisplay{2,1}.name];
-cd ..;%now youre in the subject folder
+cd ..;
 
 %% Cd out:
-cd ..;%now youre in the data folder 
+cd ..;
 
 %% Hand over to SPM Job man:
 SpmBatch = {};
