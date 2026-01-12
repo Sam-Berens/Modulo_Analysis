@@ -1,4 +1,4 @@
-function [] = z12_InverseWarpRois(G,roisToWarp)
+function [] = z13_InverseWarpRois(G,roisToWarp)
 % Inverse warp ROIs from MNI space to native space (for each participant).
 % This procedure uses DARTEL tools and so requires a DARTEL group template,
 % along with flowfield images per participant. This routine involves three
