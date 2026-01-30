@@ -1,4 +1,4 @@
-function [] = zX6_makeEpsilon()
+function [] = zX4_makeEpsilon_mdl3()
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
@@ -26,26 +26,27 @@ epiMask = getEpiMask(subjectId);
 %remember that a stims are stacked ontop of b stim
 [tImgs] = getTimgs(subjectId,epiMask);
 
-yDepth = 8; %Y is going to have 8 outputs (1st 4 for coloc=-1 2nd 4 for coloc=+1)
+yDepth = 2; %Y is going to have 8 outputs (1st 4 for coloc=-1 2nd 4 for coloc=+1)
 %% loop through searchlight centres to test produce epsilon term from precursor to mdl03
 r = 3; 
-Y = searchlight3D(3,@qFunc_Mdl2,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
+Y = searchlight3D(3,@epsilonFun,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 
-%we're going to save all stats maps as nifti so we can norm q images
-%to mni space and so that we can do QA checks on the others
+
 coLocM1 = Y(:,:,:,1);
 coLocP1 = Y(:,:,:,2);
-
 coLocM1Mask = ~isnan(coLocM1);
 coLocP1Mask = ~isnan(coLocP1);
+%put coloc =-1 and =+1 together (stacked in 4th Dim)
+epsilon = cat(4,coLocM1,coLocP1);
+epMask = cat(4,coLocM1Mask,coLocP1Mask);
 
 
 %for the q analysis we set nans to be 1s? so that when they got
 %interpolated we were only biasing the images towards q = 1? because nans
 %get turned into zeros in the interpolation?
 
-images = {coLocM1,coLocP1,coLocM1Mask,coLocP1Mask};
-names = {'coLocM1','coLocP1','coLocM1Mask','coLocP1Mask'};
+images = {epsilon,epMask};
+names = {'epsilon','epMask'};
 descrip = sprintf('Epsilon map for nonlin RDM model, searchlight r=%i',r);
 %save to their mdl03 folder
 for iIm=1:numel(images)
