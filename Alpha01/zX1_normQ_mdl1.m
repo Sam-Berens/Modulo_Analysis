@@ -1,6 +1,6 @@
-function [] = zX1_normQs()
+function [] = zX1_normQ_mdl1()
 G = 'G1';
 imagePath = ['Analysis',filesep,'Alpha01',...
     filesep,'Mdl01'];
-norm2MNI(G,imagePath);
+norm2MNI(G,imagePath,[0,0,0],[nan,nan,nan]);
 return

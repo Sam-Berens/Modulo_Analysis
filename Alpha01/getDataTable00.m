@@ -2,7 +2,7 @@ function [DataTable00] = getDataTable00(G)
 
 if exist('DataTable00.mat','file')
     DataTable00 = load('DataTable00.mat');
-    DataTable00 = DataTable00.DataTable01;
+    DataTable00 = DataTable00.DataTable00;
     return
 end
 

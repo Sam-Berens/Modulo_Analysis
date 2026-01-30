@@ -1,8 +1,9 @@
-function [dt01] = getDataTable01()
-dtName = 'Datatable01.mat';
-if exist("dtName","dir")
+function [dt01,mmY] = getDataTable01()
+dtName = 'DataTable01.mat';
+if exist(dtName,"file")
     strct = load(dtName);
     dt01 = strct.dt01;
+    mmY = strct.mmY;
     return
 end
 
@@ -21,11 +22,14 @@ for iHem=1:2
     roi.V{iHem} = spm_vol(fName);
     roi.M{iHem} = spm_read_vols(roi.V{iHem});
     roi.idx{iHem} = find(roi.M{iHem}>0.5);
+    [x,y,z] = ind2sub(size(roi.M{iHem}),roi.idx{iHem});
+    voxCoords = [x y z ones(numel(x),1)]';   % 4 × N
+    mmCoords = roi.V{iHem}.mat * voxCoords;
+    mmY.(cHemi) = mmCoords(2,:)';
 end
+mmY.comb = [mmY.l; mmY.r];
 
 %preallocate columns for table
-mmY.l = cell(nSubs,1);
-mmY.r = cell(nSubs,1);
 lq.l = cell(nSubs,1);
 lq.r = cell(nSubs,1);
 rho.l = nan(nSubs,1);
@@ -37,34 +41,38 @@ for iSubject=1:nSubs
     for iHem=1:2
         cHemi = hemi{iHem};
         %load in log(q) and mask out with roi
-        clq = getIm(char(subjectId),'wlQ.nii').M;
+        cLq = getIm(char(subjectId),'wlQ.nii').M;
         %mask out the values of q which did not meet the inequality...
         %(mask needs thresholding because its been normed to mni)
         qMask =  getIm(char(subjectId),'wqMask.nii').M > 0.5;
-        clq(qMask<1)= nan;
+        cLq(qMask<1)= nan;
         %store log(q) values from inside the mni roi for that subject
-        roilq = clq(roi.idx{iHem});
-        lq.(cHemi)(iSubject)  = {roilq};
-        %TO DO - obtain list of mm y coords for each q values
-        [x,y,z] = ind2sub(size(roi.M{iHem}),roi.idx{iHem});
-        voxCoords = [x y z ones(numel(x),1)]';   % 4 × N
-        mmCoords = roi.V{iHem}.mat * voxCoords;
-        mmY.(cHemi)(iSubject) = {mmCoords(2,:)'};
+        roiLq = cLq(roi.idx{iHem});
+        lq.(cHemi)(iSubject)  = {roiLq};
         %do corr on each sub
         %ignoring the q values which have been masked with nans
-        rho.(cHemi)(iSubject) = corr(mmCoords(2,:)',roilq, 'Rows', 'complete');
+        rho.(cHemi)(iSubject) = corr(mmY.(cHemi),roiLq, 'Rows','complete'); 
     end
 end
 
+%make combined cols
+lq.comb = arrayfun(@(l,r) {[l{:};r{:}]}, lq.l,lq.r);
+rho.comb = arrayfun(@(a) corr(a{:}, mmY.comb,'Rows', 'complete'), lq.comb);
+%Fischer Z-transform
 z_rho.l = atanh(rho.l);
 z_rho.r = atanh(rho.r);
+z_rho.comb = atanh(rho.comb);
 
-dt01 = table(subjectIds,mmY.l,lq.l,rho.l,z_rho.l,mmY.r,lq.r,rho.r,z_rho.r);
-dt01.Properties.VariableNames = {'subjectId','left_mmY','left_logQ',...
-    'left_Corr','left_zCorr','right_mmY','right_logQ',...
-    'right_Corr','right_zCorr'};
-save(dtName,"dt01");
+dt01 = table(subjectIds,z_rho.comb, z_rho.l,z_rho.r,...
+    rho.comb,rho.l,rho.r,lq.comb,lq.l,lq.r);
+dt01.Properties.VariableNames = {'subjectId','zCorr_comb','zCorr_l','zCorr_r',...
+    'Corr_comb','Corr_l','Corr_r','logQ_comb','logQ_l','logQ_r'};
+%get performance on nonCom
+dt02 = get_pNonc(G);
+dt02.mcPnonc = dt02.pNonc - mean( dt02.pNonc);
+dt01 = join(dt01,dt02);
 
+save(dtName,"dt01","mmY");
 return
 
 function [im] = getIm(subjectId,fname)

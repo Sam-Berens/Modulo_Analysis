@@ -1,4 +1,4 @@
-function [] = zX0_makeQ()
+function [] = zX0_makeQ_mdl1()
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
@@ -28,6 +28,7 @@ epiMask = getEpiMask(subjectId);
 
 yDepth = 4; %this is because the axis model has 3 params plus the error term
 %% loop through searchlight centres to test produce q term from precursor to mdl01
+r = 3; 
 Y = searchlight3D(3,@qFunc,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 
 %we're going to save all stats maps as nifti so we can norm q images
@@ -37,12 +38,13 @@ B1 = Y(:,:,:,2);
 Q = Y(:,:,:,3);
 %error of the model
 err = Y(:,:,:,4);
-%images needed for model 2
+%images needed for model 1
 lQ = log(Q);
 qMask = ~isnan(Q);
 
 images = {Q,B0,B1,err,lQ,qMask};
 names = {'q','b0','b1','error','lQ','qMask'};
+descrip = sprintf('Stat map for nonlin RDM model, searchlight r=%i',r);
 for iIm=1:numel(images)
     im.M = images{iIm};
     im.V = epiMask.V;
@@ -50,7 +52,7 @@ for iIm=1:numel(images)
     label = names{iIm};
     %save to their mdl01 folder
     im.V.fname = [dirs.Mdl01,filesep,label,'.nii'];
-    im.V.descrip = 'Statistic map of nonlinear pattern–RDM fit model';
+    im.V.descrip = descrip;
     spm_write_vol(im.V,im.M);
 end
 return

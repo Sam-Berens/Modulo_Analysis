@@ -20,7 +20,7 @@ if isempty(S1) || isempty(S2) || isempty(S3)
 end
 
 % Preallocate components
-components = ones(1,8);
+components = nans(1,8);
 
 % Compute the neural similarity
 R = corr(M);
