@@ -89,12 +89,17 @@ end
 DataTable00 = movevars(DataTable00, 'maxX', 'After', 'EAPchi');
 DataTable00 = movevars(DataTable00, 'MAPchi', 'After', 'MAPubc');
 
+%make bools into doubles so can be used as dummy codes by fitlme
+pairType = {'sup','zero','commute','noncom'}; 
+DataTable00 = convertvars(DataTable00,find(ismember(DataTable00.Properties.VariableNames,pairType)),...
+    'double');
+
 save('DataTable00.mat',"DataTable00");
 return
 
 
 
-function [pairTypeName,typeBool] = getQtype(pairId)
+function [pairTypeName,typeBool] = getQtype(pairId) %TODO align column names with values in pairType column
 % normalize input to a column vector
 if iscategorical(pairId)
     %we're doing it this way because turning a categorical array ...

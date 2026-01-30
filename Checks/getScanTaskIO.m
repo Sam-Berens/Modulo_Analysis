@@ -6,6 +6,11 @@ ScanDiagTable = [];
 for iSubject = 1:numel(subjectIds)
     [T,S] = loadData(char(subjectIds(iSubject)));
     if ~isempty(T)
+        if size(T,2) < 23
+            T.phiScrol = cell(size(T,1),1);
+            T.phiRespo = nan(size(T,1),1);
+            T.phiKeyp1 = nan(size(T,1),1);
+        end
         TaskIO = [TaskIO;T]; %#ok<*AGROW>
         ScanDiagTable = [ScanDiagTable;S];
     end
