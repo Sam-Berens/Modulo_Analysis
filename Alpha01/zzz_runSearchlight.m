@@ -41,12 +41,12 @@ for iSubject = 1:numel(subjectIds)
     % Set the neighborhood size image
     Vc = Mask.V;
     Vc.fname = [dirs.Searchlight,filesep,'hoodSize.nii'];
-    Vc.dt(1) = 2;
+    Vc.dt(1) = 16;
     Vc.descrip = 'Alpha01 zTemplate searchlight: neighborhood size (#vx);';
 
     % Run the searchlight
     [Z,N] = searchlight3D(...
-        3,...          Radius
+        5,...         Radius
         @searchFun,... Function
         Mask,...       Mask
         Timgs,...      Data
@@ -65,7 +65,12 @@ return
 function [z] = searchFun(X)
 
 persistent Sn Spa Spb hn hpa hpb;
-if isempty(Sn) || isempty(Spa) || isempty(Spb) || isempty(hn) || isempty(hpa) || isempty(hpb)
+if isempty(Sn) || ...
+    isempty(Spa) || ...
+    isempty(Spb) || ...
+    isempty(hn) || ....
+    isempty(hpa) || ...
+    isempty(hpb)
     
     % Construct the basic 6x6 similarity hypothesis
     simFun = @(x,y) 1-((min(mod((x-y),6),mod((y-x),6))/3));
