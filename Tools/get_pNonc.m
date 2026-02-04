@@ -1,4 +1,7 @@
 function [pNonc] = get_pNonc(G)
+if nargin < 1
+    error('Please specify a group')
+end 
 % pNonc is a vector within a table encoding the summed probability of a
 % correct response for all non-commutable pairs at the end of training, as
 % estimated by taking the mean posterior values from A00/vonMises.
