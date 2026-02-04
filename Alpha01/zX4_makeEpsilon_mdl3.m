@@ -40,11 +40,6 @@ coLocP1Mask = ~isnan(coLocP1);
 epsilon = cat(4,coLocM1,coLocP1);
 epMask = cat(4,coLocM1Mask,coLocP1Mask);
 
-
-%for the q analysis we set nans to be 1s? so that when they got
-%interpolated we were only biasing the images towards q = 1? because nans
-%get turned into zeros in the interpolation?
-
 images = {epsilon,epMask};
 names = {'epsilon','epMask'};
 descrip = sprintf('Epsilon map for nonlin RDM model, searchlight r=%i',r);

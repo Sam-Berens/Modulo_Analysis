@@ -1,9 +1,8 @@
 function [epsilon] = epsilonFun(M)
-%% prop is a 1 x 2 for coloc = -1 and +1
-epsilon = nan(1,2);
+%% epsilon is a 1 x 2 for coloc = -1 and +1
 % Set mean similarity selectors
-persistent S1 S2 S3;
-if isempty(S1) || isempty(S2) || isempty(S3)
+persistent S;
+if isempty(S) || any(structfun(@isempty,S))
     [A,B] = meshgrid(0:5,0:5);
     Db = min(mod(A-B,6),mod(B-A,6));
 
@@ -19,6 +18,11 @@ if isempty(S1) || isempty(S2) || isempty(S3)
     S.p2 = D==2;
     S.p3 = D==3;
 end
+
+% Preallocate the epsilon for both conditions
+epsilon = nan(1,2);
+
+% Compute the neural similarity
 R = corr(M);
 
 % Extract mean similarities (colocation=-1)
@@ -27,12 +31,10 @@ mu2 = mean(R(S.n2));
 mu3 = mean(R(S.n3));
 
 % Return if the target inequality does not hold
-if isnan(mu1) || (mu1 < mu2) || (mu2 < mu3)
-    epsilon(1) = NaN;
-    return
+if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+    rho = [mu1;mu2;mu3];
+    epsilon(1) = getEpsilon(rho);
 end
-rho = [mu1;mu2;mu3];
-epsilon(1) = getEpsilon(rho);
 
 % Extract mean similarities (colocation=+1)
 mu1 = mean(R(S.p1));
@@ -40,12 +42,11 @@ mu2 = mean(R(S.p2));
 mu3 = mean(R(S.p3));
 
 % Return if the target inequality does not hold
-if isnan(mu1) || (mu1 < mu2) || (mu2 < mu3)
-    epsilon(2) = NaN;
-    return
+if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+    rho = [mu1;mu2;mu3];
+    epsilon(2) = getEpsilon(rho);
 end
-rho = [mu1;mu2;mu3];
-epsilon(2) = getEpsilon(rho);
+
 return
 
 

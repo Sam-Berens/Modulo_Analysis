@@ -1,6 +1,6 @@
-function [] = zX2_makeQ_mdl2(G)
-subjectIds = getSubjectIds(G);
+function [] = zX2_makeQ_mdl2()
 G = 'G1';
+subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
 subjectIds = char(subjectIds);
 for iSubject=1:nSubs

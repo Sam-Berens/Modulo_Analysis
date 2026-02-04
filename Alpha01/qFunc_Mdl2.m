@@ -2,7 +2,7 @@ function [components] = qFunc_Mdl2(M)
 
 % Set mean similarity selectors
 persistent S;
-if isempty(S1) || isempty(S2) || isempty(S3)
+if isempty(S) || any(structfun(@isempty,S))
     [A,B] = meshgrid(0:5,0:5);
     Db = min(mod(A-B,6),mod(B-A,6));
 
@@ -20,7 +20,7 @@ if isempty(S1) || isempty(S2) || isempty(S3)
 end
 
 % Preallocate components
-components = nans(1,8);
+components = nan(1,8);
 
 % Compute the neural similarity
 R = corr(M);
