@@ -1,16 +1,16 @@
 function [] = z01_estimL1(G)
-% Estimate first-level GLMs for Alpha00.
+% Estimate first-level GLMs for Alpha01.
 %
-%   z01_estimL1(G) estimates first-level SPM models for Alpha00 (using the
+%   z01_estimL1(G) estimates first-level SPM models for Alpha01 (using the
 %   Least-Squares-Separate method) across all subjects in the group defined
-%   by G and for each stimulus (i0–i5).
+%   by G and for each stimulus (a0–a5, b0-b5).
 %
 %   Inputs:
 %     G  - Group identifier consumed by getSubjectIds(G).
 %
 %   Requirements / Assumptions:
 %     • Event specification files exist at:
-%         */[SubjectId]/Analysis/Alpha00/i*/EventSpec_R*.mat
+%         */[SubjectId]/Analysis/Alpha01/[pos]*/EventSpec_R*.mat
 %     • Realignment parameter files exist at:
 %         */[SubjectId]/EPI/RP*.mat
 %     • EPI images exist in per-run folders:
@@ -30,7 +30,7 @@ function [] = z01_estimL1(G)
 %
 %   Outputs (per subject × stimulus):
 %     • SPM.mat and parameter estimate images (beta_*.nii) saved to:
-%         */[Subject]/Analysis/Alpha00/i*/
+%         */[Subject]/Analysis/Alpha01/[pos]*/
 %
 %   Notes:
 %     • Residual images are not written (write_residuals = 0).
