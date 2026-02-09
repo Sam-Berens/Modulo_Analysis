@@ -1,6 +1,6 @@
 function [DataTable01] = getDataTable01()
-if exist('Datatable01.mat','file')
-    DataTable01 = load('Datatable01.mat');
+if exist('DataTable01.mat','file')
+    DataTable01 = load('DataTable01.mat');
     return
 end
 G = 'G1';

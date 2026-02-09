@@ -38,7 +38,6 @@ for iSubject = 1:nSubjects
     m = max(Ll,[],1);
     lppd = m + log(mean(exp(Ll - m),1));
 
-
     % Step 3: Compute the point-wise penalty ...
     % ... (variance of the log likelihood for every sample on each trial).
     ppp = var(Ll,[],1);
