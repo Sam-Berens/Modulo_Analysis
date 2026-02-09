@@ -1,3 +1,21 @@
+# Model class
+Includes:
+ - A
+ - Alpha
+
+# Model family
+Includes:
+ - A00
+ - A01
+ - Alpha00
+ - Alpha01
+
+# Model numbers
+ - Alpha01/Mdl00 (Prereged RSA)
+ - Alpha01/Mdl01 (Prereged long-axis model [q])
+ - Alpha01/Mdl02 (Saturated long-axis model [q])
+ - Alpha01/Mdl03 (Saturated long-axis model [epsilon])
+
 # Alpha00
 This folder contains analysis results for Least Square Seperate (LSS) models using different modeling approaches and configurations.
 
@@ -34,6 +52,16 @@ Analysis/
 - **Alpha01**: Native space ordering LSS models
   - Distinguishes between a and b positions
   - Uses position notation: `[a|b]x_Ry` where position is either `a` or `b`, `x` is the integer value (0-5), and `y` is the run number
+    Within **Alpha01**, several models are implemented:
+      - `mdl00` is the preregistered mixed-effects model applied to the Fisher z-transformed statistic.
+      - `mdl01` is the preregistered axis model.
+      - `mdl02` is above model with interaction of colocation
+      - `mdl03` is axis analysis using epsilon term
+      - `mdl04` is a fully saturated analysis of the zTemplate searchlight 
+      - `mdl05` looks at the simple effects highlighted by mdl04 
+      - scripts `z0-02` generate the t-patterns used by all models 
+      - scripts `z03-04` generate the searchlight used by mdl04-5
+      - scripts within the model folders are numbered carrying on from the scripts which they depend on in the above folder  
 
 ### Directory Naming Pattern
 
@@ -62,6 +90,15 @@ Where:
 - **Examples**: 
   - `Analysis/Alpha**01**/a2_R1/`
   - `Analysis/Alpha**01**/b4_R3/`
+
+### Model Specification Files
+  Each model is specified using an .mlx file. Decimal suffixes are used to indicate progressively more complex versions of a given base model, reflecting the incremental addition of terms.
+
+  For example:
+  - `mdl00.0` denotes the basic version of the preregistered mixed-effects model.
+  - `mdl00.1` denotes an extended version of mdl00 with additional interaction terms.<br>
+  Further decimal increments (e.g. `mdl00.2`) indicate subsequent model extensions.<br>
+  This decimal-based convention applies consistently across all model families (e.g. mdl01, mdl02).
 
 ## Usage
 
