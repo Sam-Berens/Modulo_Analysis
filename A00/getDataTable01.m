@@ -1,6 +1,7 @@
 function [DataTable01] = getDataTable01()
 if exist('DataTable01.mat','file')
     DataTable01 = load('DataTable01.mat');
+    DataTable01 = DataTable01.DataTable01;
     return
 end
 G = 'G1';
