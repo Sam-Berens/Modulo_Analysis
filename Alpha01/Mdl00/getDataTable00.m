@@ -6,6 +6,10 @@ if exist('DataTable00.mat','file')
     return
 end
 
+% Cd out
+wd = pwd;
+cd ..;
+
 pNonc = get_pNonc(G);
 pNonc.cpNonc = pNonc.pNonc - mean(pNonc.pNonc);
 [roiIds,roiNames] = getRoiList();
@@ -30,5 +34,7 @@ end
 % Sort by subjectId
 DataTable00 = sortrows(DataTable00,'subjectId');
 
+% Cd back and save
+cd(wd);
 save('DataTable00.mat','DataTable00');
 return

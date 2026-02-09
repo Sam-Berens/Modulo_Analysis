@@ -1,4 +1,8 @@
-function [] = zX0_makeQ_mdl1()
+function [] = zX03_makeQ()
+% Cd out
+wd = pwd;
+cd ..;
+
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
@@ -7,6 +11,8 @@ for iSubject=1:nSubs
     subjectId = subjectIds(iSubject,:);
     makeQ(subjectId,G);
 end
+% Cd back
+cd(wd);
 return
 
 

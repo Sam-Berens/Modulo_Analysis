@@ -1,4 +1,4 @@
-function [components] = qFunc_Mdl2(M)
+function [components] = qFunc1(M)
 
 % Set mean similarity selectors
 persistent S;
@@ -31,7 +31,7 @@ mu2 = mean(R(S.n2));
 mu3 = mean(R(S.n3));
 
 % Get the fit (colocation=-1)
-if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+if ~isnan(mu1) && (mu1 > mu2) && (mu2 > mu3)
     components(1:4) = fitQ([mu1;mu2;mu3]);
 end
 
@@ -41,7 +41,7 @@ mu2 = mean(R(S.p2));
 mu3 = mean(R(S.p3));
 
 % Get the fit (colocation=+1)
-if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+if ~isnan(mu1) && (mu1 > mu2) && (mu2 > mu3)
     components(5:8) = fitQ([mu1;mu2;mu3]);
 end
 

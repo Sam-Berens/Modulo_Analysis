@@ -1,4 +1,4 @@
-function [epsilon] = epsilonFun(M)
+function [epsilon] = epsilonFunc0(M)
 %% epsilon is a 1 x 2 for coloc = -1 and +1
 % Set mean similarity selectors
 persistent S;
@@ -30,8 +30,8 @@ mu1 = mean(R(S.n1));
 mu2 = mean(R(S.n2));
 mu3 = mean(R(S.n3));
 
-% Return if the target inequality does not hold
-if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+% Only return epsilon values if the equality holds
+if ~isnan(mu1) && (mu1 > mu2) && (mu2 > mu3)
     rho = [mu1;mu2;mu3];
     epsilon(1) = getEpsilon(rho);
 end
@@ -41,8 +41,8 @@ mu1 = mean(R(S.p1));
 mu2 = mean(R(S.p2));
 mu3 = mean(R(S.p3));
 
-% Return if the target inequality does not hold
-if ~(isnan(mu1) || (mu1 < mu2) || (mu2 < mu3))
+% Only return epsilon values if the equality holds
+if ~isnan(mu1) && (mu1 > mu2) && (mu2 > mu3)
     rho = [mu1;mu2;mu3];
     epsilon(2) = getEpsilon(rho);
 end
@@ -50,8 +50,8 @@ end
 return
 
 
-function prop = getEpsilon(rho)
-prop = (rho(2) - rho(1))/(rho(3)-rho(1)); % coarse (0) < 0.5 < fine (1)
-prop = prop - 0.5; % (-0.5) coarse < 0 < fine (0.5)
-prop = prop * 2;  %  (-1) coarse < 0.5 < fine (1)
+function ep = getEpsilon(rho)
+ep = (rho(1) - rho(2))/(rho(1)-rho(3)); % coarse (0) < 0.5 < fine (1)
+ep = ep - 0.5; % (-0.5) coarse < 0 < fine (0.5)
+ep = ep * 2;  %  (-1) coarse < 0.5 < fine (1)
 return

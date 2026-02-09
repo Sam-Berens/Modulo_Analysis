@@ -1,4 +1,8 @@
-function [] = zX4_makeEpsilon_mdl3()
+function [] = z03_makeEpsilon()
+% Cd out
+wd = pwd;
+cd ..;
+
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
@@ -7,6 +11,8 @@ for iSubject=1:nSubs
     subjectId = subjectIds(iSubject,:);
     makeEpsilon(subjectId,G);
 end
+% Cd back in
+cd(wd);
 return
 
 
@@ -14,7 +20,7 @@ function [] = makeEpsilon(subjectId,G)
 dirs.Data = '../../Data';
 dirs.Subject = [dirs.Data,filesep,char(subjectId)];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
-dirs.Mdl03 = [dirs.Alpha01,filesep,'Mdl03']; %TO DO DECIDE FOLDER NAME
+dirs.Mdl03 = [dirs.Alpha01,filesep,'Mdl03']; 
 dirs.G1 = [dirs.Mdl03,filesep,G];
 if ~exist(dirs.Mdl03 ,'dir')
     mkdir(dirs.Mdl03);
@@ -26,10 +32,10 @@ epiMask = getEpiMask(subjectId);
 %remember that a stims are stacked ontop of b stim
 [tImgs] = getTimgs(subjectId,epiMask);
 
-yDepth = 2; %Y is going to have 8 outputs (1st 4 for coloc=-1 2nd 4 for coloc=+1)
+yDepth = 2; %Y is going to have 2 outputs (1st for coloc=-1 2nd for coloc=+1)
 %% loop through searchlight centres to test produce epsilon term from precursor to mdl03
 r = 3; 
-Y = searchlight3D(3,@epsilonFun,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
+Y = searchlight3D(3,@epsilonFunc0,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 
 
 coLocM1 = Y(:,:,:,1);

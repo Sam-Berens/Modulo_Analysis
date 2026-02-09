@@ -7,6 +7,10 @@ if exist(dtName,"file")
     return
 end
 
+% Cd out
+wd = pwd;
+cd ..;
+
 G = 'G1';
 subjectIds = getSubjectIds(G);
 nSubs = numel(subjectIds);
@@ -72,6 +76,8 @@ dt02 = get_pNonc(G);
 dt02.mcPnonc = dt02.pNonc - mean( dt02.pNonc);
 dt01 = join(dt01,dt02);
 
+% Cd back and save
+cd(wd);
 save(dtName,"dt01","mmY");
 return
 

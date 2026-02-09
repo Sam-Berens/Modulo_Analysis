@@ -1,4 +1,4 @@
-function [components] = qFunc(M)
+function [components] = qFunc0(M)
 
 % Set mean similarity selectors
 persistent S1 S2 S3;
