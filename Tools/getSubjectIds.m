@@ -50,9 +50,6 @@ switch G
         pNonc = pNonc(pNonc.pNonc>5,:);
         toKeep = ismember(subjectId,cellstr(pNonc.subjectId));
         subjectId = subjectId(toKeep);
-    case 'G3'
-        toKeep = ~ismember(subjectId,{'eade18a5';'efcb7c45'});
-        subjectId = subjectId(toKeep);
     otherwise
         error('Unrecognised group ID.');
 end
