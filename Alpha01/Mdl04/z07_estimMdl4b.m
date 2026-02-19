@@ -1,9 +1,8 @@
-function [] = z07_estimMdl4b()
+function [] = z07_estimMdl4b(G)
 
 % Cd out
 wd = pwd;
 cd ..;
-
 %% Get a table that includes all subjectIds and performance stats
 InputTable = get_pNonc(G);
 InputTable.cpNonc = InputTable.pNonc - mean(InputTable.pNonc);
@@ -19,7 +18,7 @@ dirs.Output = [dirs.Data,...
     filesep,G,...
     filesep,'Analysis',...
     filesep,'Alpha01',...
-    filesep,'colocation=+1'];
+    filesep,'Mdl04b'];
 if ~exist(dirs.Output,'dir')
     mkdir(dirs.Output);
 end

@@ -1,9 +1,8 @@
-function [] = z05_make2ndLvlDesign()
+function [] = z05_make2ndLvlDesign(G)
 % Cd out into Alpha01
 wd = pwd;
 cd ..;
 dirs.Data = '../../Data';
-G = 'G1';
 subjectId = getSubjectIds(G);
 nSubs = numel(subjectId);
 tWide = pivot(table(subjectId),'columns','subjectId', ...
@@ -36,6 +35,10 @@ R = X{:,:};
 %add interaction column;
 xTermStruct = getXtermStruct(names);
 R = addXterms(R,xTermStruct);
+idx = find(strcmp(names,'zPnonc'));
+%take out zPnonc because its perfectly corr with subject dummy codes
+R = R(:,[1:(idx-1),(idx+1)]);
+names = names([1:(idx-1),(idx+1)]);
 fldr = fullfile(dirs.Data,'_Group',G,'Analysis','Alpha01',...
     'Mdl04');
 fname = fullfile(fldr,'X.mat');

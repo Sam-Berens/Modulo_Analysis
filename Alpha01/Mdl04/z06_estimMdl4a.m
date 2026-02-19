@@ -1,31 +1,18 @@
-function [] = z06_estimMdl4a()
-%this will be for estimating the effects ACROSS people from the results of
-%the searchlight, zTemplate ~ colocation*cPnonc + (1 | subject) 
-%remeber the random effects will acutally have to be dummy variables and
-
-%you dont get a group intercept you have to work it out manually through
-%doing a contrast image where everyone's intercept is weighted as 1/31
-
-%the contrast for coloc will actually just be the difference between the
-%two colocs not the effect of one of them
-
+function [] = z06_estimMdl4a(G)
 % Estimate second-level GLM for Mdl04.
 %
-%   z06_FullInteraction2ndLvlMdl(G) estimates second-level SPM model for Mdl04 (using the
-%   XXX method) across all subjects in the group defined
-%   by G.
+%   z06_FullInteraction2ndLvlMdl(G) estimates second-level SPM model for
+%   Mdl04 across all subjects in the group defined by G.
 %
 %   Inputs:
 %     G  - Group identifier consumed by getSubjectIds(G).
 %
 %   Requirements / Assumptions:
 %     • Design matrix file exist at:
-%         */_Group/[G]/Alpha01/Mdl4/covariates.mat.mat
-%     XXXXXXXXX
+%         */_Group/[G]/Alpha01/Mdl4/X.mat
 %
 %   Model details:
-%     • Formula: zTemplate ~ colocation*cPnonc + (1 | [subjectN])_n 
-%   XXXXXXXXXXX
+%     • Formula: zTemplate ~ (1|SubjectId) + colocation + colocation:zPnonc
 %
 %   Outputs (per group):
 %     • SPM.mat and parameter estimate images (beta_*.nii) saved to:
@@ -34,22 +21,19 @@ function [] = z06_estimMdl4a()
 %     • Residual images are not written (write_residuals = 0).
 %     • No contrasts are specified here.
 
-% Cd out
+%% Cd out
 wd = pwd;
 cd ..;
 
-%load in design mat
-G = 'G1';
+%% Load the design mat
 dirs.Data = '../../Data' ;
 dirs.Group =  fullfile(dirs.Data,'_Group',G);
-dirs.Mdl4 = fullfile(dirs.Group,'Analysis','Alpha01',...
-    'Mdl04');
+dirs.Mdl4 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl04_r3');
 Rfn = fullfile(dirs.Mdl4,'X.mat');
-%load in names to make sure the order of the columns matches the scans
-strct = load(Rfn);
-names = strct.names;
+loadStrct = load(Rfn);
+names = loadStrct.names;
 
-% get group mask
+%% Get group mask
 maskFn = fullfile(dirs.Group, 'Structural','GrpEpiMask00',...
     'G1_GrpEpiMask00.nii');
 %get 'scan' names in correct order for R rows
@@ -86,6 +70,7 @@ SpmBatch{1}.spm.stats.factorial_design.masking.em = {maskFn};
 SpmBatch{1}.spm.stats.factorial_design.globalc.g_omit = 1;
 SpmBatch{1}.spm.stats.factorial_design.globalm.gmsca.gmsca_no = 1;
 SpmBatch{1}.spm.stats.factorial_design.globalm.glonorm = 1;
+
 %% Job definition: Estimate
 SpmBatch{2}.spm.stats.fmri_est.spmmat(1) = {fullfile(dirs.Mdl4,'SPM.mat')};
 SpmBatch{2}.spm.stats.fmri_est.write_residuals = 0;
@@ -97,9 +82,4 @@ spm_jobman('run',SpmBatch);
 
 % Cd back in
 cd(wd);
-return 
-
-
-
-%TO DO : reminder to check the spm.mat file after estimation to see if the scans
-%actually lined up with the design mat how we expected
+return
