@@ -1,0 +1,6 @@
+function [imgPerm] = getImagePerm(subjectId)
+data = webwrite(...
+    'https://b01.learningandinference.org/GetSessionDef.php',...
+    'SubjectId',subjectId);
+imgPerm = data.ImgPerm;
+return
