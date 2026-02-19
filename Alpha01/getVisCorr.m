@@ -1,6 +1,6 @@
 function [vPreds] = getVisCorr()
-%% expects to be called when cd is Alpha01
-fName = 'vPreds.mat';
+wd = pwd;
+fName = fullfile(wd,'Mdl05','vPreds.mat');
 if exist(fName,'file')
     strct = load(fName);
     vPreds = strct.vPreds;
