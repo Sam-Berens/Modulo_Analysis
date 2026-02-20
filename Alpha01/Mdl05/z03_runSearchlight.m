@@ -49,9 +49,9 @@ for iSubject = 1:numel(subjectIds)
 
     % Set the visSim output header
     Vv = Mask.V;
-    Vp.fname = [dirs.Mdl05,filesep,'zTemplate_visSim.nii'];
-    Vp.dt(1) = 64;
-    Vp.descrip = sprintf('Alpha01 zTemplate searchlight: visSim, r=%i',r);
+    Vv.fname = [dirs.Mdl05,filesep,'zTemplate_visSim.nii'];
+    Vv.dt(1) = 64;
+    Vv.descrip = sprintf('Alpha01 zTemplate searchlight: visSim, r=%i',r);
 
     % Set the neighborhood size image
     Vc = Mask.V;
