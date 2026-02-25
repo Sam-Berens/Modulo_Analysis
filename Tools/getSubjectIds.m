@@ -33,7 +33,7 @@ if nargin < 1
 end
 
 % Get the full list of subject IDS:
-dirLits = dir('../../Data');
+dirLits = dir([fileparts(mfilename('fullpath')),filesep,'../../Data']);
 subjectId = {dirLits(cellfun(@(s)numel(s)==8,{dirLits.name}')).name}';
 subjectId = sort(subjectId); %#ok<TRSRT>
 

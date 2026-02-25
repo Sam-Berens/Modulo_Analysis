@@ -14,11 +14,11 @@ if any(contains(fields,'rois'))
         newT = renamevars(newT,varName,[varName,'_alpha']);
     end
     mC = join(mdl.FFX.pVal(1:4,:),newT,'Keys', 'RowNames');
-    order = nan(1,16);
-    for ii=1:8
+    order = nan(1,(nCols*2));
+    for ii=1:nCols
         col = ii+(ii-1);
         order(col) = ii;
-        order(col+1) = 8+ii;
+        order(col+1) = nCols+ii;
     end
     mC = mC(:,order);
 else

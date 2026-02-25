@@ -7,7 +7,8 @@ end
 % estimated by taking the mean posterior values from A00/vonMises.
 
 model = 'vonMises';
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
+dirs.Data = [fileparts(mfilename('fullpath')),...
+    filesep,'..',filesep,'..',filesep,'Data'];
 dirs.Group = [dirs.Data,filesep,'_Group'];
 dirs.A00 = [dirs.Group,filesep,'A00'];
 dirs.vonMises = [dirs.A00,filesep,model];
