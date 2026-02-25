@@ -6,7 +6,6 @@ if exist(dtName,"file")
     mmY = strct.mmY;
     return
 end
-
 % Cd out
 wd = pwd;
 cd ..;
@@ -32,9 +31,6 @@ for iHem=1:2
     mmY.(cHemi) = mmCoords(2,:)';
 end
 
-invW_mmY = getInvWmniYs();
-
-
 %make a seperate table for coloc =- 1 and coloc =+1 
 % same for each hemisphere and then join them at the end 
 
@@ -54,12 +50,12 @@ for iColoc = -1:2:1
             %% Method 1: corr on each sub, using mni coords and mni-normed epsilons
             %load in epsilon and mask out with roi
             cFldr = fullfile(dirs.Data,char(subjectId),fPart);
-            fName = fullfile(cFldr,G,'wepsilon_new.nii');
+            fName = fullfile(cFldr,G,'wepsilon.nii');
             strct = getIm(fName);
             cE = strct(imIdx).M;
             %mask out the values of epsilon which did not meet the inequality...
             %nans from native image were turned to zeros in normed image
-            fName = fullfile(cFldr,G,'wepMask_new.nii');
+            fName = fullfile(cFldr,G,'wepMask.nii');
             strct = getIm(fName);
             eMask = strct(imIdx);
             eMask = eMask.M > 0.5;
@@ -73,24 +69,8 @@ for iColoc = -1:2:1
                 corr_method1(iSubject) = corr(mmY.(cHemi),...
                     roiE, 'Rows','complete');
             end
-
-            %% Method 2: corr using native epsilon and mni coords inverse
-            fName = fullfile(cFldr,'epsilon_new.nii');
-            strct = getIm(fName);
-            %select out the M and V for the current coloc condition
-            cE = strct(imIdx);
-            roiId = [cHemi,'HippC'];
-            %return epsilon and y image values inside the epi-res native roi
-            cInvY = invW_mmY(iSubject);
-            [roiInvY,roiE] = getMskdIms_EpiRes(G,subjectId,roiId,cInvY,cE);
-            if  sum(~isnan(roiE)) < 3
-                corr_method2(iSubject) = nan;
-            else
-                corr_method2(iSubject) = corr(roiInvY,roiE,...
-                    'Rows','complete');
-            end
         end
-        t = table(subjectIds,hemisphere,coLocation,corr_method1,corr_method2);
+        t = table(subjectIds,hemisphere,coLocation,corr_method1);
         if iHem==-1 && iColoc==-1
             dt03 = t;
         else 
@@ -102,7 +82,6 @@ end
 
 %Fischer Z-transform
 dt03.zCorr_m1 = atanh(dt03.corr_method1);
-dt03.zCorr_m2 = atanh(dt03.corr_method2);
 
 %get performance on nonCom
 dtB = get_pNonc(G);

@@ -1,5 +1,7 @@
-function [] = zzz_runSearchlight(G)
-
+function [] = z03_runSearchlight(G)
+wd = pwd;
+%Back up into Alpha01
+cd .. 
 % Get the list of subjectIds
 subjectIds = getSubjectIds(G);
 
@@ -21,9 +23,9 @@ for iSubject = 1:numel(subjectIds)
     % Set the output directory
     dirs.Subject = [dirs.Data,filesep,char(cSid)];
     dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
-    dirs.Searchlight = [dirs.Alpha01,filesep,'Searchlight'];
-    if ~exist(dirs.Searchlight,'dir')
-        mkdir(dirs.Searchlight);
+    dirs.Mdl4 = [dirs.Alpha01,filesep,'Mdl04'];
+    if ~exist(dirs.Mdl4,'dir')
+        mkdir(dirs.Mdl4);
     end
 
     % Set the colocation = -1 output header
@@ -46,7 +48,7 @@ for iSubject = 1:numel(subjectIds)
 
     % Run the searchlight
     [Z,N] = searchlight3D(...
-        5,...         Radius
+        5,...         Radius  
         @searchFun,... Function
         Mask,...       Mask
         Timgs,...      Data
@@ -60,6 +62,8 @@ for iSubject = 1:numel(subjectIds)
     spm_write_vol(Vp,Mp);
     spm_write_vol(Vc,N);
 end
+%return to Mdl04 folder
+cd(wd);
 return
 
 function [z] = searchFun(X)

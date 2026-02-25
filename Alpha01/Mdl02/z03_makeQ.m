@@ -35,7 +35,7 @@ epiMask = getEpiMask(subjectId);
 yDepth = 8; % Y is going to have 8 outputs (1st 4 for coloc=-1 2nd 4 for coloc=+1)
 %% loop through searchlight centres to test produce q term from precursor to mdl01
 r = 3;
-Y = searchlight3D(r,@qFunc2,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
+Y = searchlight3D(r,@qFunc1,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 B0 = cat(4,Y(:,:,:,1),Y(:,:,:,5));
 B1 = cat(4,Y(:,:,:,2),Y(:,:,:,6));
 Q = cat(4,Y(:,:,:,3),Y(:,:,:,7));

@@ -31,9 +31,6 @@ for iHem=1:2
     mmY.(cHemi) = mmCoords(2,:)';
 end
 
-
-invW_mmY = getInvWmniYs();
-
 %make a seperate table for coloc =- 1 and coloc =+1 
 % same for each hemisphere and then join them at the end 
 
@@ -47,49 +44,30 @@ for iColoc = -1:2:1
         coLocation = ones(nSubs,1)*iColoc;
         hemisphere = ones(nSubs,1)*iHem;
         corr_method1 = nan(nSubs,1);
-        corr_method2 = nan(nSubs,1);
-        for iSubject=1:nSubs
+        for iSubject=1:nSubs 
             subjectId = subjectIds(iSubject);
             %% Method 1: corr on each sub, using mni coords and mni-normed log(q)
             %load in log(q) and mask out with roi
             cFldr = fullfile(dirs.Data,char(subjectId),fPart);
-            fName = fullfile(cFldr,G,'wnew_lQ.nii');
+            fName = fullfile(cFldr,G,'wlQ.nii'); 
             strct = getIm(fName);
-            cLq = strct(imIdx).M;
-            %mask out the values of log(q) which did not meet the inequality...
-            %nans from native image were turned to zeros in normed image
-            fName = fullfile(cFldr,G,'wnew_qMask.nii');
+            clQ = strct(imIdx).M;
+            %mask out the values of q which did not meet the inequality...
+            %(mask needs thresholding because its been normed to mni)
+            fName = fullfile(cFldr,G,'wqMask.nii'); 
             strct = getIm(fName);
             qMask = strct(imIdx);
             qMask = qMask.M > 0.5;
-            cLq(qMask<1)= nan;
-            %filter log(q) values for inside the mni roi 
-            roiLq = cLq(roi(hemIdx).idx);
-
-            if  sum(~isnan(roiLq)) < 3 % correlation is invalid in this context
+            clQ(qMask<1)= nan;
+            %store log(q) values from inside the mni roi for that subject
+            roiLq = clQ(roi(hemIdx).idx);
+            if sum(~isnan(roiLq)) < 3
                 corr_method1(iSubject) = nan;
             else
-                corr_method1(iSubject) = corr(mmY.(cHemi),...
-                    roiLq, 'Rows','complete');
-            end
-
-            %% Method 2: corr using native log(q) and mni coords inverse
-            fName = fullfile(cFldr,'new_lQ.nii');
-            strct = getIm(fName);
-            %select out the M and V for the current coloc condition
-            cLq = strct(imIdx);
-            roiId = [cHemi,'HippC'];
-            %return log(q) and y image values inside the epi-res native roi
-            cInvY = invW_mmY(iSubject);
-            [roiInvY,roiLq] = getMskdIms_EpiRes(G,subjectId,roiId,cInvY,cLq);
-            if  sum(~isnan(roiLq)) < 3
-                corr_method2(iSubject) = nan;
-            else
-                corr_method2(iSubject) = corr(roiInvY,roiLq,...
-                    'Rows','complete');
+                corr_method1(iSubject) = corr(mmY.(cHemi),roiLq, 'Rows','complete');
             end
         end
-        t = table(subjectIds,hemisphere,coLocation,corr_method1,corr_method2);
+        t = table(subjectIds,hemisphere,coLocation,corr_method1);
         if iHem==-1 && iColoc==-1
             dt02 = t;
         else 
@@ -101,7 +79,6 @@ end
 
 %Fischer Z-transform
 dt02.zCorr_m1 = atanh(dt02.corr_method1);
-dt02.zCorr_m2 = atanh(dt02.corr_method2);
 
 %get performance on nonCom
 dtB = get_pNonc(G);

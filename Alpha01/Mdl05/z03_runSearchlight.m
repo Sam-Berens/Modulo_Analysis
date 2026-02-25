@@ -20,11 +20,10 @@ for iSubject = 1:numel(subjectIds)
     % Get the Timags (native space)
     Timgs = getTimgs(cSid);
 
-    %Get subject's image perm, undo zero-ordering, get pidx for vis RSM
+    %Get subject's image perm, undo zero-ordering
     imgPerm = getImagePerm(char(cSid));
     imgPerm = imgPerm + 1;
-    [~,pidx] = sort(imgPerm);
-
+    
     % Set the output directory
     dirs.Subject = [dirs.Data,filesep,char(cSid)];
     dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
@@ -33,7 +32,6 @@ for iSubject = 1:numel(subjectIds)
         mkdir(dirs.Mdl05);
     end
 
-    %TO DO _ PICK RAD
     r = 5;
     % Set the colocation = -1 output header
     Vn = Mask.V;
@@ -62,10 +60,11 @@ for iSubject = 1:numel(subjectIds)
 
     %this is a beta for coloc-1, coloc+1 and VisStruct
     Ydepth = 3;
+
     % Run the searchlight
     [Z,N] = searchlight3D(...
         r,...         Radius   -
-        @(M) searchFun(M,pidx),... Function
+       @(M) mdl5Func(M,imgPerm),... Function
         Mask,...       Mask
         Timgs,...      Data
         Ydepth,...     Output depth
@@ -85,13 +84,11 @@ cd(wd);
 return
 
 
-function [z] = searchFun(M,pidx)
+function [z] = mdl5Func(M,imgPerm)
 
-persistent H_ h S v;
-if isempty(v) ||...
-        isempty(S) || ...
-        isempty(h) || ...
-        isempty(H_)
+persistent prev_imgPerm S IX;
+if isempty(prev_imgPerm) || isempty(S) || isempty(IX) || ...
+    ~isequal(prev_imgPerm, imgPerm)
         
     % Construct the basic 6x6 similarity hypothesis
     simFun = @(x,y) 1-((min(mod((x-y),6),mod((y-x),6))/3));
@@ -102,38 +99,34 @@ if isempty(v) ||...
     end
     h = H_(tril(true(6),-1));
 
-    %make the selectors for the real data RSM
+    % Make the selectors for the real data RSM
     S.n.ab = logical(kron([0,0;1,0],tril(true(6),-1)));
     S.n.ba = logical(kron([0,0;1,0],triu(true(6),1)));
     S.p.a = logical(kron([1,0;0,0],tril(true(6),-1)));
     S.p.b = logical(kron([0,0;0,1],tril(true(6),-1)));
 
-    %load in predicted visual similarity based on their permutation
-    %and layer X of denseNet-169
+    % Load in predicted visual similarity from denseNet-169
     V = getVisCorr();
-    %% Permute the values of V to reflect the images assigned to each number for
-    %% that subject
-    %this assumes that perm works such that e.g. image i03 becomes
-    %image 1, i.e. the index is indicated by the position, not the number
-    %get rid of zero ordering (currently rsm is arranged such that column 1 is
-    %comparisons with image i00.png, so we want the 0 in imgPerm to get mapped
-    %to column 1 (before all the permuting)
-    idxs = (1:36)';
-    [x,y] = ind2sub(size(V),idxs);
-    nx = arrayfun(@(x) pidx(x),x);
-    ny = arrayfun(@(y) pidx(y),y);
-    prmV = nan(6);
-    for ii=1:36
-        prmV(nx(ii),ny(ii)) = V(idxs(ii));
-    end
+    
+    % Permute the rows and cols of V
+    PV = V(imgPerm,imgPerm);
     %select out lower tri
-    v = prmV(tril(true(6),-1));
+    v = PV(tril(true(6),-1));
     %scale all vectors such that they are projecting from the origin
     %and are zscored
     h = zscore(h);
     h = repmat(h,[2,1]);
     v = zscore(v);
     v = repmat(v,[4,1]);
+
+    % Construct the design matrix (X)
+    X = [kron(eye(2),h),v];
+
+    % Invert for regression
+    IX = pinv(X);
+
+    % Set/update prev_imgPerm
+    prev_imgPerm = imgPerm;
 
 end
 %get the 12x12 RSM for the searchlight image
@@ -146,8 +139,6 @@ yp.a = zscore(R(S.p.a));
 yp.b = zscore(R(S.p.b));
 y = [yn;yp.a;yp.b];
 
-%construct the design matrix
-X = [kron(eye(2),h),v];
 %do regression and Fischer-transform the results
-z = atanh(pinv(X)*y);
+z = atanh(IX*y);
 return

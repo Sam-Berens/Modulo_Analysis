@@ -1,4 +1,4 @@
-function [] = z07_testPnonc()
+function [] = z09_testPnoncMdl4b()
 % Cd out
 wd = pwd;
 cd ..;
@@ -8,7 +8,7 @@ G = 'G1';
 subjectIds = getSubjectIds(G);
 %make Y a cell array of NIfTI file names
 Y = arrayfun(@(x) fullfile(dirs.Data,char(x),'Analysis',...
-    'Alpha01','Searchlight',G,'wzTemplate_colocation=+1.nii'),...
+    'Alpha01','Mdl04',G,'wzTemplate_colocation=+1.nii'),...
     subjectIds,'UniformOutput', false);
 %mean center the nonCom predictor 
 t = get_pNonc(G);
@@ -19,14 +19,14 @@ x = t{:,'pNonc'} - mean(t.pNonc);
 % across subjects, using tfce
 
 %% Voxel-wise correlation, no parfor
-[pVal, tfceStat] = tfce_nullBoot_corr(Y,x,false);
+[pVal, tfceStat] = tfce_nullBoot_corr(Y,x,false,'single');
 
 %read the group epi mask normed to mni so you have an appropriate header
 %for your pVal map
 src = fullfile(dirs.Data,'_Group',G,'Structural',...
     'GrpEpiMask00','G1_GrpEpiMask00.nii');
 pVname = fullfile(dirs.Data,'_Group',G,'Analysis',...
-    'Alpha01','colocation=+1','tfce_pNonc.nii');
+    'Alpha01','Mdl04b','tfce_pNonc.nii');
 V0 = spm_vol(src);
 V1 = V0;
 V1.dt = [16,0];
@@ -39,5 +39,4 @@ spm_write_vol(V1,tfceStat);
 
 % Cd back in
 cd(wd);
-save('tfceResult_pNonc.mat',"tfceStat","pVal");
 return

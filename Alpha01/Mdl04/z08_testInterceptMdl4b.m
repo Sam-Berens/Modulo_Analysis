@@ -1,4 +1,4 @@
-function [] = z06_testIntercept()
+function [] = z08_testInterceptMdl4b()
 % Cd out
 wd = pwd;
 cd ..;
@@ -8,22 +8,22 @@ G = 'G1';
 subjectIds = getSubjectIds(G);
 %make Y a cell array of NIfTI file names
 Y = arrayfun(@(x) fullfile(dirs.Data,char(x),'Analysis',...
-    'Alpha01','Searchlight',G,'wzTemplate_colocation=+1.nii'),...
-    subjectIds,'UniformOutput', false);
+    'Alpha01','Mdl04',G,'wzTemplate_colocation=+1.nii'),...
+    subjectIds,'UniformOutput', false); 
 %call tfce_nullBoot_oneSample() to test intercept against null across
 %people using tfce
 
 %read in y as 4d and then mask it out
 
 %% One-sample test (H0: mean = 0), false just means no parfor
-[pVal, tfceStat] = tfce_nullBoot_oneSample(Y,0,false);
+[pVal, tfceStat] = tfce_nullBoot_oneSample(Y,0,false,'single');
 
 %read the group epi mask normed to mni so you have an appropriate header
 %for your pVal map
 src = fullfile(dirs.Data,'_Group',G,'Structural',...
     'GrpEpiMask00','G1_GrpEpiMask00.nii');
 pVname = fullfile(dirs.Data,'_Group',G,'Analysis',...
-    'Alpha01','colocation=+1','tfce.nii');
+    'Alpha01','Mdl04b','tfce.nii');
 V0 = spm_vol(src);
 V1 = V0;
 V1.dt = [16,0];
@@ -36,5 +36,4 @@ spm_write_vol(V1,tfceStat);
 
 % Cd back in
 cd(wd);
-save('tfceResult.mat',"tfceStat","pVal");
 return
