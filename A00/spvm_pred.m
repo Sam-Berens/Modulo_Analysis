@@ -1,7 +1,7 @@
 function [Pmf,angles] = spvm_pred(x,p)
-% Description:
+% [Pmf,angles] = spvm_pred(x,p)
 %    Predicts the probability mass function (Pmf) over discrete angle bins
-%    using a Softplus von Mises model.
+%    using the Softplus von Mises model.
 %
 % Inputs:
 %    x - Vector of predictor values.
