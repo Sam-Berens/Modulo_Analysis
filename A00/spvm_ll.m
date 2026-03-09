@@ -1,4 +1,4 @@
-function [lq] = vM_ll(b,x,theta)
+function [lq] = spvm_ll(P,x,theta)
 %MODIFIED VERSION of spth_nll.m
 % Description:
 %    Computes the negative log-likelihood (nll) for a Softplus-tanh model
@@ -13,25 +13,19 @@ function [lq] = vM_ll(b,x,theta)
 % Outputs:
 %    lq   - Vector of log-likelihoods for all samples 
 
-[pmf,angles] = vM_pred(x,b);
-theta = theta(~isnan(theta)); %chop off the nan attempts
-nTry = size(theta,1);
-cumP = 0; % cumulative probability 
+[pmf,angles] = spvm_pred(P,x);
+theta = theta(~isnan(theta));
+nTry = numel(theta);
+massExcluded = 0;
+lq = 0;
 for k = 1:nTry
     t = theta(k);
-    sResp = abs(t-angles)<1e-6;
-    cP = pmf(:,sResp); %current probability of response given the model
-    if k==1
-        lq = log(cP);
-    else
-        condP = cP ./ (1 - cumP); %conditional probability for each attempt
-        lq = lq + log(condP);
-    end
-    cumP = cumP + cP;
-
+    sResp = abs(t-squeeze(angles)') < 1e-6;
+    p = pmf(:,sResp);
+    lq = lq + log(p) - log(1-massExcluded);
+    massExcluded = massExcluded + p;
 end
 if ~isfinite(lq)
     warning('Non-finite log-likelihood detected');
 end
-
 return

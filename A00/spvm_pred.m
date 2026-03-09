@@ -1,5 +1,5 @@
-function [Pmf,angles] = spvm_pred(x,p)
-% [Pmf,angles] = spvm_pred(x,p)
+function [Pmf,angles] = spvm_pred(P,x)
+% [Pmf,angles] = spvm_pred(P,x)
 %    Predicts the probability mass function (Pmf) over discrete angle bins
 %    using the Softplus von Mises model.
 %
@@ -9,8 +9,9 @@ function [Pmf,angles] = spvm_pred(x,p)
 %
 % Outputs:
 %    Pmf    - Matrix of predicted probability mass functions. Each row
-%             corresponds to a distrinct element of x, and each column
-%             corresponds to an angle bin.
+%             corresponds to a disct row in P, each column corresponds to a
+%             distrinct element of x, and each page corresponds to an angle
+%             bin.
 %    angles - Vector of discrete angle values (in radians) used for the
 %             prediction.
 %
@@ -22,17 +23,22 @@ function [Pmf,angles] = spvm_pred(x,p)
 %            concentration parameters (k).
 %    vmpdf - Computes a matrix of von Mises probability density functions.
 %
-% See also: spth_nll
-%
-x = x(:);
-a = p(1);
-b = p(2);
-angles = (0:5).*(pi/3);
+if size(P,2) ~= 2
+    error('P must be an n-by-2 matrix');
+end
+x = x(:)';
+angles = reshape((0:5).*(pi/3),1,1,[]);
+
+% nSamples = size(P,1);
+% nTrials = numel(x);
+% Pmf = nan(nSamples,nTrials,6);
+
+a = P(:,1);
+b = P(:,2);
 xPred = log(1+exp(x-a)).*b;
 tPred = tanh(xPred);
 kPred = r2k(tPred);
-pdf = vmpdf(angles,0,kPred);
-Pmf = pdf./sum(pdf,2);
+Pmf = vmPmf(angles,0,kPred);
 return
 
 function [k] = r2k(r)
@@ -65,7 +71,7 @@ k(k>700) = 700;
 k(k<-700) = -700;
 return
 
-function [pdf] = vmpdf(theta,mu,k)
+function [Pmf] = vmPmf(theta,mu,k)
 % vmpdf computes the von Mises probability density function.
 %
 % Inputs:
@@ -77,8 +83,8 @@ function [pdf] = vmpdf(theta,mu,k)
 %    pdf   - Vector of probability density values computed at each angle in
 %            theta.
 %
-% The pdf is normalised over all discrete angles in theta.
+% The pmf is normalised over all discrete angles in theta.
 %
-pdf = exp(k.*cos(theta-mu));
-pdf = pdf ./ sum(pdf,2);
+Pdf_ish = exp(k.*cos(theta-mu));
+Pmf = Pdf_ish ./ sum(Pdf_ish,3);
 return

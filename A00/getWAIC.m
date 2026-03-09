@@ -5,9 +5,9 @@ subjectIds = getSubjectIds(G);
 
 % Set the model-specific log-likelihood
 if strcmp(model,'vonMises')
-    llFunc = @vM_ll;
+    llFunc = @spvm_ll;
 elseif strcmp(model,'Binomial')
-    llFunc = @BN_ll;
+    llFunc = @spbn_ll;
 end
 
 % Set some dirs
@@ -62,19 +62,38 @@ wAIC.Properties.VariableNames = {'subjectId',...
 
 return
 
-function [Ll] = makeLl(llFun,inputData,PosSamps)
+function [L] = makeLl(llFun,inputData,PosSamps)
 nSamples = size(PosSamps,1);
+x = inputData.x;
+nTrials = numel(x);
+L = nan(nSamples,nTrials);
 getTheta = @(yy,t) mod((yy-t).*(pi/3),2*pi);
-Ll = nan(nSamples,inputData.nTrials);
-for iTrial = 1:inputData.nTrials
-    pairId = inputData.pairId(iTrial);
+
+colName = arrayfun(...
+    @(ii)sprintf('a_%i',ii),...
+    inputData.pairId,...
+    'UniformOutput',false);
+colIdx = cellfun(...
+    @(x)find(strcmp(x,PosSamps.Properties.VariableNames)),...
+    colName);
+A = PosSamps{:,colIdx};
+
+colName = arrayfun(...
+    @(ii)sprintf('b_%i',ii),...
+    inputData.pairId,...
+    'UniformOutput',false);
+colIdx = cellfun(...
+    @(x)find(strcmp(x,PosSamps.Properties.VariableNames)),...
+    colName);
+B = PosSamps{:,colIdx};
+
+
+for iTrial = 1:numel(x)
+    x_ii = x(iTrial,:);
     target = inputData.c(iTrial);
     y = inputData.Y(iTrial,:);
     theta = getTheta(y,target);
-    a = PosSamps.(['a_',int2str(pairId)]);
-    b = PosSamps.(['b_',int2str(pairId)]);
-    x = inputData.x(iTrial);
-    ll = llFun([a,b],x,theta);
-    Ll(:,iTrial) = ll';
+    P = [A(:,iTrial),B(:,iTrial)];
+    L(:,iTrial) = llFun(P,x_ii,theta);
 end
 return
