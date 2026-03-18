@@ -88,7 +88,6 @@ end
 cd(wd);
 return
 
-
 function [z] = mdl5Func(M,imgPerm)
 
     persistent nanzscore VisSim prev_imgPerm S IX;
