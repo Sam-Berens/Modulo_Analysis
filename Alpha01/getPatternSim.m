@@ -18,15 +18,17 @@ end
 Hp1 = kron(eye(2),H);
 Hp1(triu(true(12))) = NaN;
 Hp1(logical(kron([0,0;1,0],true(6)))) = NaN;
+Hp1_idx = find(~isnan(Hp1));
+Hp1_aa = Hp1;
+Hp1_aa(logical(kron([0,0;0,1],ones(6)))) = NaN;
+Hp1_bb = Hp1;
+Hp1_bb(logical(kron([1,0;0,0],ones(6)))) = NaN;
 
 % Hn1 is for the colocation = -1
 Hn1 = kron([0,0;1,0],H);
 Hn1(triu(true(12))) = NaN;
 Hn1(~isnan(Hp1)) = NaN; % Remove colocation = +1
 Hn1(logical(kron([0,0;1,0],eye(6)))) = NaN; % Remove the visual effect
-
-% Finally, remove upper triangle of H, including the diagonal
-H(triu(true(6))) = NaN;
 
 %% Get the subject list
 subjectId = getSubjectIds(G);
@@ -38,7 +40,7 @@ zTemplate = nan(nSubjects*2,1);
 pCover = nan(nSubjects*2,1);
 patternSim = cell(nSubjects*2,1);
 
-%% Loopy loo
+%% Loopy loop
 fh = waitbar(0,['Getting pattern similarity for ',roiId]);
 iIn = 0;
 for iSubject = 1:nSubjects
@@ -50,7 +52,7 @@ for iSubject = 1:nSubjects
     % Compute pairwise correlation of stimuli across voxels
     R = corr(Data);
 
-    % Compute zTemplate and extract patternSim for each colocatoin
+    % Compute zTemplate and extract patternSim for each colocation
     for cl = -1:2:1
         iIn = iIn + 1;
         colocation(iIn) = cl;
@@ -61,12 +63,12 @@ for iSubject = 1:nSubjects
             Ps(xor(true(6),logical(eye(6)))) = R(~isnan(Hn1));
             patternSim{iIn} = Ps;
         else
-            idx = find(~isnan(Hp1));
+            zTemplate(iIn) = ...
+                (nanzcorr(Hp1_aa,R) + nanzcorr(Hp1_bb,R)) / 2;
             Ps_aa = nan(6);
-            Ps_aa(tril(true(6),-1)) = R(idx(1:15));
             Ps_bb = nan(6);
-            Ps_bb(tril(true(6),-1)) = R(idx(16:30));
-            zTemplate(iIn) = (nanzcorr(H,Ps_aa) + nanzcorr(H_,Ps_bb))/2;
+            Ps_aa(tril(true(6),-1)) = R(Hp1_idx(1:15));
+            Ps_bb(tril(true(6),-1)) = R(Hp1_idx(16:30));
             Ps = sum(cat(3,Ps_aa,Ps_bb'),3,'omitmissing');
             Ps(logical(eye(6))) = NaN;
             patternSim{iIn} = Ps;
@@ -83,7 +85,7 @@ subjectId = subjectId';
 subjectId = subjectId(:);
 
 %% Make the data table
-PatternSim = table(subjectId,colocation,zTemplate,zTemplate_,pCover,patternSim);
+PatternSim = table(subjectId,colocation,zTemplate,pCover,patternSim);
 return
 
 function [z] = nanzcorr(H,R)
