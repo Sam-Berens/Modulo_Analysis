@@ -93,7 +93,7 @@ persistent nanzscore VisSim prev_imgPerm S IX;
 if isempty(nanzscore) || isempty(VisSim)
     nanzscore = @(v) (v-mean(v,'omitmissing')) ./ std(v,'omitmissing');
 
-    temp = load('VisualSim.mat');
+    temp = load('./Mdl05/VisualSim.mat');
     VisSim = temp.VisualSim;
 end
 
