@@ -28,7 +28,7 @@ cd ..;
 %% Load the design mat
 dirs.Data = '../../Data' ;
 dirs.Group =  fullfile(dirs.Data,'_Group',G);
-dirs.Mdl5 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl05');
+dirs.Mdl5 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl05a');
 Rfn = fullfile(dirs.Mdl5,'X.mat');
 loadStrct = load(Rfn);
 names = loadStrct.names;
@@ -76,7 +76,6 @@ spmBatch{2}.spm.stats.fmri_est.spmmat(1) = {fullfile(dirs.Mdl5,'SPM.mat')};
 spmBatch{2}.spm.stats.fmri_est.write_residuals = 0;
 spmBatch{2}.spm.stats.fmri_est.method.Classical = 1;
 
-
 % Contrasts
 spmMatfn = fullfile(dirs.Mdl5,'SPM.mat');
 spmBatch{3}.spm.stats.con.spmmat(1) = {spmMatfn};
@@ -84,7 +83,7 @@ spmBatch{3}.spm.stats.con.spmmat(1) = {spmMatfn};
 pNonc = get_pNonc('G1');
 zPnonc = zscore(pNonc.pNonc);
 zPnonc = zPnonc(order);
-zPnonc_d = zPnonc./31;
+zPnonc_d = zPnonc; 
 
 conNames = cell(5,1);
 %intercept
@@ -93,19 +92,19 @@ H.intercept = [ones(1,nSubs).*(1/nSubs),0,0];
 %main effects
 conNames{2} = 'zPnonc';
 H.zPnonc = [zPnonc_d',0,0];
-conNames{3} = 'colocation';
+conNames{3} = 'coloc';
 H.colocation = [zeros(1,nSubs),1,0];
 %interaction effect
-conNames{4} = 'zPnoncXcoloc';
+conNames{4} = 'zPnonc:coloc';
 H.zPnoncXcoloc =  [zeros(1,nSubs),0,1];
 %simple effect
-conNames{5} = 'zPnoncInColocP1';
+conNames{5} = 'zPnonc_coloc=+1';
 H.zPnoncInColocP1 = [zPnonc_d',0,1];
-
+fields = fieldnames(H);
 
 for iH = 1:numel(conNames)
     spmBatch{3}.spm.stats.con.consess{iH}.tcon.name = conNames{iH};
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.weights = H.(conNames{iH});
+    spmBatch{3}.spm.stats.con.consess{iH}.tcon.weights = H.(fields{iH});
     spmBatch{3}.spm.stats.con.consess{iH}.tcon.sessrep = 'none';
 end
 spmBatch{3}.spm.stats.con.delete = 1;

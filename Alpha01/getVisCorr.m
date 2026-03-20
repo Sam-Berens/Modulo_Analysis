@@ -19,7 +19,7 @@ layers  = net.Layers;
 isConcat = arrayfun(@(l) isa(l,'nnet.cnn.layer.ConcatenationLayer'), layers);
 cLayers = layers(isConcat);
 % We are looking for conv5_block16_concat, conv5 is in dense block 4 (
-% first conv stage why is before denseblock 1)
+% first conv stage is before denseblock 1)
 idx = 6 +12 + 32 + 16;% this is n dense layers in blocks 1:3 + 16 
 layers = cLayers(idx);
 %layers = layers(~ismember({layers.Name},toExlude));

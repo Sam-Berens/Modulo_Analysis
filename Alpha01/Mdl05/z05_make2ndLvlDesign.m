@@ -40,7 +40,7 @@ idx = find(strcmp(names,'zPnonc'));
 R = R(:,[1:(idx-1),(idx+1)]);
 names = names([1:(idx-1),(idx+1)]);
 fldr = fullfile(dirs.Data,'_Group',G,'Analysis','Alpha01',...
-    'Mdl05');
+    'Mdl05a');
 fname = fullfile(fldr,'X.mat');
 
 if ~exist(fldr,"dir")
