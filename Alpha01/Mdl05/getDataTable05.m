@@ -21,7 +21,7 @@ subjectIds = pNonc.subjectId;
 
 %% Get ROI list
 roiNames = arrayfun(...
-    @(ii)sprintf('R%03d',ii),...
+    @(ii)sprintf('N17P200_R%03d',ii),...
     (1:200)',...
     'UniformOutput',false);
 
@@ -37,8 +37,8 @@ for iRoi = 1:numel(roiNames)
     DT = outerjoin(pNonc,DT);
 
     % Rename subjectId after outerjoin
-    RoiData.subjectId_DT = [];
-    RoiData.Properties.VariableNames{1} = 'subjectId';
+    DT.subjectId_DT = [];
+    DT.Properties.VariableNames{1} = 'subjectId';
     DataTables05{iRoi} = DT;
 end
 

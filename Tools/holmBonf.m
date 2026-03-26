@@ -1,15 +1,15 @@
-function [alphas,rejectNull] = holmBonf(alpha, ps)
+function [rejectNull,thresholds] = holmBonf(pValues,alpha)
 
-m = numel(ps);
-[ps,idx] = sort(ps);
-alphas = nan(m,1);
-rejectNull = nan(m,1);
-for ii=1:m
-    alphas(ii) = alpha / (m-ii+1);
-    rejectNull(ii) = ps(ii) < alphas(ii);
+if nargin < 2
+    alpha = 0.05;
 end
 
-alphas(idx) = alphas;
-rejectNull(idx) = rejectNull;
-
+m = numel(pValues);
+[~,idx] = sort(pValues);
+thresholds = nan(m,1);
+for ii = 1:m
+    thresholds(ii) = alpha / (m-ii+1);
+end
+thresholds(idx) = thresholds;
+rejectNull = pValues < thresholds;
 return

@@ -71,6 +71,11 @@ Mdl.FFX.dfe = array2table(dfe, 'RowNames',rois,'VariableNames',sFfx);
 Mdl.FFX.rawsz = array2table(ffxRawsz,'RowNames',rois,'VariableNames',sFfx);
 Mdl.FFX.tests = array2table(ffxTests,'RowNames',rois,'VariableNames',sFfx);
 
+%% Correction for multiple comparisons
+Mdl.FFX.sig = thresholdP(Mdl.FFX.pVal);
+[Mdl.FFX.rawsz] = boldSigPvals(Mdl.FFX.rawsz,Mdl.FFX.sig);
+[Mdl.FFX.tests] = boldSigPvals(Mdl.FFX.tests,Mdl.FFX.sig);
+
 return
 
 function s = fmtNum(x)
@@ -100,4 +105,30 @@ elseif p < 1e-4
 else
     s = sprintf('%.3g', p);
 end
+return
+
+function [sig] = thresholdP(pVal)
+
+ffx = pVal.Properties.VariableNames;
+sig = pVal;
+sig.Variables = nan(size(pVal));
+for ii = 1:numel(ffx)
+    n = ffx{ii};
+    p = pVal.(n);
+    sig.(n) = holmBonf(p);
+end
+
+return
+
+function [tStrings] = boldSigPvals(tStrings,tBools)
+
+newStrings = tStrings.Variables;
+Bools = tBools.Variables;
+for ii = 1:numel(newStrings)
+    if Bools(ii)
+        newStrings(ii) = strcat("<strong>",newStrings(ii),"</strong>");
+    end
+end
+tStrings.Variables = newStrings;
+
 return
