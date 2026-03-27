@@ -1,4 +1,4 @@
-function [fgh] = plotRoiEffect(cDT,mdl)
+function [fgh] = plotRoiEffect(cDT,mdl,roiName)
 mu = mean(cDT.pNonc);
 x = linspace(0,6,144);
 fgh = figure;
@@ -28,4 +28,10 @@ ylim([-0.6,0.6]);
 axis square;
 title('Colocation = +1');
 hold off;
+
+annotation(fgh, 'textbox', ...
+    [0.25 0.9 0.5 0.05], ...   % [x y width height] in normalized figure units
+    'String', roiName, ...
+    'EdgeColor', 'none', ...
+    'HorizontalAlignment', 'center');
 return

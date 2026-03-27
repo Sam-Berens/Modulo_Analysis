@@ -8,6 +8,6 @@ for ii=1:numel(names)
     cRoi = names{ii};
     cMdl = mdl05.mdl.mdl{ii};
     cDT = dt5(dt5.roiName == cRoi,:);
-   fgh(ii) = plotRoiEffect(cDT,cMdl);
+   fgh(ii) = plotRoiEffect(cDT,cMdl,cRoi);
 end
 return
