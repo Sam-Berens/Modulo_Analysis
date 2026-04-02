@@ -1,41 +1,35 @@
-function [DataTable02] = getDataTable02()
-
-filename = 'DataTable02.mat';
-if exist(filename,"file")
-    X = load(filename);
-    DataTable02 = X.DataTable02;
+function [dt02b,mmY] = getDataTable02b()
+dtName = 'DataTable02b.mat';
+if exist(dtName,"file")
+    strct = load(dtName);
+    dt02b = strct.DataTable02b;
+    mmY = strct.mmY;
     return
 end
 
+% Cd out
+wd = pwd;
+cd ..;
 
-%% Get MNI Hippocampal masks
-dirs.Data = '../../../Data';
+G = 'G1';
+subjectIds = getSubjectIds(G);
+nSubs = numel(subjectIds);
 
-%%
+%get MNI masks
+dirs.Data = '../../Data';
 hemiName = {'l'; 'r'};
-hippoMasks = struct('V',[],'M',[],'idx',[]);
+% hippoMasks = struct('V',[],'M',[],'idx',[]);
 for iHemi = 1:2
     cHemi = hemiName{iHemi};
     cDir = dir([fullfile(dirs.Data,'_Group','MniRois'),...
         filesep,'*',[cHemi,'HippC*.nii']]);
     fName = fullfile(cDir.folder,cDir.name);
     mask = loadMask(fName);
-    mmY.(cHemi) = mask.MniY(mask.idx);
-    hippoMasks(iHemi) = mask;
+    %these are an output because needed for scatter graphs
+    mmY.(cHemi) = mask.MniY(mask.idx); 
+    %these are used in selecting out the lQ vals
+   hippoMasks(iHemi) = mask;%#ok<AGROW
 end
-
-%%
-G = 'G1';
-
-% CD out
-wd = pwd;
-cd ..;
-
-subjectIds = getSubjectIds(G);
-nSubs = numel(subjectIds);
-
-%make a seperate table for coloc =- 1 and coloc =+1
-% same for each hemisphere and then join them at the end
 
 % loop through subject
 fPart = fullfile('Analysis','Alpha01','Mdl02');
@@ -43,10 +37,9 @@ for iColoc = -1:2:1
     imIdx = (iColoc >0) + 1;
     for iHemi=-1:2:1
         hemIdx = ((iHemi >0) + 1);
-        cHemi = hemiName{hemIdx};
-        coLocation = ones(nSubs,1)*iColoc;
+        colocation = ones(nSubs,1)*iColoc;
         hemisphere = ones(nSubs,1)*iHemi;
-        corr_method1 = nan(nSubs,1);
+        lQ = cell(nSubs,1);
         for iSubject=1:nSubs
             subjectId = subjectIds(iSubject);
             %% Method 1: corr on each sub, using mni coords and mni-normed log(q)
@@ -63,36 +56,28 @@ for iColoc = -1:2:1
             qMask = qMask.M > 0.5;
             clQ(qMask<1)= nan;
             %store log(q) values from inside the mni roi for that subject
-            roiLq = clQ(hippoMasks(hemIdx).idx);
-            if sum(~isnan(roiLq)) < 3
-                corr_method1(iSubject) = nan;
-            else
-                corr_method1(iSubject) = corr(mmY.(cHemi),roiLq, 'Rows','complete');
-            end
+            lQ{iSubject} = clQ(hippoMasks(hemIdx).idx);
         end
-        t = table(subjectIds,hemisphere,coLocation,corr_method1);
+        t = table(subjectIds,hemisphere,colocation,lQ);
         if iHemi==-1 && iColoc==-1
-            DataTable02 = t;
+            DataTable02b = t;
         else
-            DataTable02 = [DataTable02;t];%#ok<AGROW>
+            DataTable02b = [DataTable02b;t];%#ok<AGROW>
         end
     end
 end
-
-
-%Fischer Z-transform
-DataTable02.zCorr_m1 = atanh(DataTable02.corr_method1);
-
+DataTable02b.Properties.VariableNames{1} = 'subjectId';
 %get performance on nonCom
-dtB = get_pNonc(G);
-dtB.mcPnonc = dtB.pNonc - mean( dtB.pNonc);
-DataTable02 = renamevars(DataTable02,"subjectIds","subjectId");
-DataTable02 = join(DataTable02,dtB);
+dtP = get_pNonc(G);
+dtP.mcPnonc = dtP.pNonc - mean( dtP.pNonc);
+DataTable02b = join(DataTable02b,dtP);
 
 % Cd back and save
 cd(wd);
-save(filename,"DataTable02","mmY");
+save(dtName,"DataTable02b","mmY");
 return
+
+
 
 function [mask] = loadMask(filename)
 V = spm_vol(filename);
