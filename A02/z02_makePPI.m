@@ -2,7 +2,7 @@
 % roiInfo.fn = '/mnt/Erebus/Modulo/Data/_Group/MniRois/_Cluster-Alpha01-Mdl05a_+zPnonc_rVisual.nii';
 % roiInfo.id = 'rVisual';
 
-%ideally we'd want to just contruct the fn like this but this doesnt quite
+%ideally we'd want to just construct the fn like this but this doesnt quite
 %work for the clusters because we're not using their fullname in later
 %labelling:     roiFn = ['/mnt/Erebus/Modulo/Data/_Group/MniRois/',roiId];
 function [] = z02_makePPI(G,roiInfo)

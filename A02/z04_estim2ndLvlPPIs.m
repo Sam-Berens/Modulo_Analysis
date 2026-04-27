@@ -7,8 +7,11 @@ function [] = z04_estim2ndLvlPPIs(G,roiInfo)
 % roiInfo.id = 'rVisual';
 % Pick which contrast numbers you want to estimate models for and build a
 % vector of them 
+conNames = {'a';'b';'a+b';'a-b'};
 for ii=4:7
-    estim2ndLvl(G,roiInfo,ii);
+    con.num = ii;
+    con.name = conNames{ii-3};
+    estim2ndLvl(G,roiInfo,con);
 end
 return
 
@@ -19,7 +22,7 @@ dir_Data = ['..',filesep,'..',filesep,'Data'];
 dir_G = fullfile(dir_Data,'_Group','G1');
 epiMask = fullfile(dir_G,'Structural','GrpEpiMask00',...
     sprintf('%s_GrpEpiMask00.nii',G));
-dir_outPut = fullfile(dir_Data,'_Group',G,'Analysis','A02',sprintf('con_%03d',con));
+dir_outPut = fullfile(dir_Data,'_Group',G,'Analysis','A02',con.name);
 %check if A02 group dir exists, and then if the subdir for that contrast
 %model exists before making them
 if ~exist(dir_outPut(1:end-8),"dir")
@@ -32,7 +35,7 @@ end
 %construct scans cell array 
 dirs = arrayfun(@(x) dirFnc(x,dir_Data,roiInfo), subjectIds,'UniformOutput',false);
 scans = cellfun(@(x) sprintf('%s%scon_%04d.nii',x.PPI,...
-    filesep,con),dirs,'UniformOutput',false);
+    filesep,con.num),dirs,'UniformOutput',false);
 %get covariate
 pNonc = get_pNonc(G);
 pNonc.zpNonc = zscore(pNonc.pNonc);
@@ -61,21 +64,36 @@ spmBatch{2}.spm.stats.fmri_est.spmmat = {fullfile(dir_outPut,'SPM.mat')};
 spmBatch{2}.spm.stats.fmri_est.write_residuals = 0;
 spmBatch{2}.spm.stats.fmri_est.method.Classical = 1;
 
+%Specify f contrasts for term in the model
+spmBatch{3}.spm.stats.con.spmmat = {fullfile(dir_outPut,'SPM.mat')};
+spmBatch{3}.spm.stats.con.consess{1}.fcon.name = 'intercept';
+spmBatch{3}.spm.stats.con.consess{1}.fcon.weights = [1 0;-1 0];
+spmBatch{3}.spm.stats.con.consess{1}.fcon.sessrep = 'none';
+spmBatch{3}.spm.stats.con.consess{2}.fcon.name = 'zPnonc';
+spmBatch{3}.spm.stats.con.consess{2}.fcon.weights = [0 1;0 -1];
+spmBatch{3}.spm.stats.con.consess{2}.fcon.sessrep = 'none';
+
 % Make contrasts
 conNames = cell(2,1);
-%effect of intercept
-conNames{1} = 'intercept';
-H.intercept = 1;
-%main effect of pNonc
-conNames{2} = 'zPnonc';
-H.zPnonc = [0,1];
+%-ve effect of intercept
+conNames{1} = '-intercept';
+H.nInt = -1;
+%+ve effect of intercept
+conNames{2} = '+intercept';
+H.pInt = +1;
+%-ve effect of pNonc
+conNames{3} = '-zPnonc';
+H.nzPnonc = [0,-1];
+%+ve effect of pNonc
+conNames{4} = '+zPnonc';
+H.pzPnonc = [0,1];
 fields = fieldnames(H);
 
 spmBatch{3}.spm.stats.con.spmmat = {fullfile(dir_outPut,'SPM.mat')};
 for iH = 1:numel(conNames)
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.name = conNames{iH};
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.weights = H.(fields{iH});
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.sessrep = 'replsc';
+    spmBatch{3}.spm.stats.con.consess{iH+2}.tcon.name = conNames{iH};
+    spmBatch{3}.spm.stats.con.consess{iH+2}.tcon.weights = H.(fields{iH});
+    spmBatch{3}.spm.stats.con.consess{iH+2}.tcon.sessrep = 'none';
 end
 spmBatch{3}.spm.stats.con.delete = 1;
 
