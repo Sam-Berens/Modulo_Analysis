@@ -1,7 +1,4 @@
-% roiInfo.fn = '/mnt/Erebus/Modulo/Data/_Group/MniRois/_Cluster-Alpha01-Mdl05a_+zPnonc_rVisual.nii';
-% roiInfo.id = 'rVisual';
-
-function [] = z03_estimPpiL1(G,roiInfo)
+function [] = z03_estimL1PPI(G,roiId)
 % Estimate first-level GLMs for A02, with PP1 predictors for a given roi.
 %
 %   z01_estimL1(G) estimates first-level SPM models for A02 across all
@@ -35,48 +32,65 @@ function [] = z03_estimPpiL1(G,roiInfo)
 %   Notes:
 %     • Residual images are not written (write_residuals = 0).
 %     • No contrasts are specified here.
+% EG:
+% roiId = 'rVisual';
 
-% Set some constants
-tr = 2.2;
+%% 
 dirs_Data = ['..',filesep,'..',filesep,'Data'];
-% epiMask = [dirs_Data,filesep,'_Group',filesep,'G1',...
-%     filesep,'Structural',filesep,'GrpEpiMask00',...
-%     filesep,'G1_GrpEpiMask00.nii'];
-
+dirs_Data = dir(dirs_Data);
+dirs_Data = dirs_Data(1).folder;
 subjectIds = getSubjectIds(G);
-nSubs = numel(subjectIds);
-for iSubject = 1:nSubs
+parfor iSubject = 1:numel(subjectIds)
+
+    dirs = struct;
     subjectId = char(subjectIds(iSubject));
-    %get subject-specific filenames and info
     dirs.Subject = fullfile(dirs_Data,subjectId);
+
+    % Set dirs.PPI (the destination)
     dirs.A02 = fullfile(dirs.Subject,'Analysis','A02');
-    dirs.PPI = fullfile(dirs.A02,sprintf('PPI_%s',roiInfo.id));
-    dirs.EPI = [dirs.Subject,filesep,'EPI'];
-    dirs.G = [dirs.EPI,filesep,G];
-    dirs.Y = [dirs.G,filesep,'k05'];
-    epiMask = [dirs.EPI,filesep,'G1',filesep,sprintf('w_%s_epiMask00.nii',subjectId)];
-    A02spmFn = fullfile(dirs.A02,'SPM.mat');
-    tmp = load(A02spmFn);
-    nRuns = size(tmp.SPM.Sess,2);
+    dirs.PPI = fullfile(dirs.A02,sprintf('PPI_%s',roiId));
+    toDel = [
+        dir(fullfile(dirs.PPI,'*.nii'));
+        dir(fullfile(dirs.PPI,'SPM.mat'))];
+    for iToDel = 1:numel(toDel)
+        delete(fullfile(toDel(iToDel).folder,toDel(iToDel).name));
+    end
+
+    % Set dirs.Y (the source)
+    dirs.EPI = fullfile(dirs.Subject,'EPI');
+    dirs.G = fullfile(dirs.EPI,G);
+    dirs.Y = fullfile(dirs.G,'k05');
+
+    epiMask = fullfile(...
+        dirs.EPI,...
+        'G1',...
+        sprintf('w_%s_epiMask00.nii',subjectId));
+
+    % Get the number of runs
+    A02SPMFn = fullfile(dirs.A02,'SPM.mat');
+    A02SPM = load(A02SPMFn);
+    nRuns = size(A02SPM.SPM.Sess,2);
+
     % Set the EPI filenames
     epiFns = getEpiFns(dirs.Y);
-    % Set the movement regressor mat filenames
-    [rpFns] = getRpsFns(dirs.EPI);
 
-    % need to load all runs for each PPI column and concatinate them (in
-    % the same order as the scans you're loading (Y in this model is just BOLD of the whole brain so I think this means we litterally just want the smoothed EPI images?)
+    % Set the movement regressor mat filenames
+    rpFns = getRpsFns(dirs.EPI);
+
+    % Load the PPI structures into two cell arrays, for a and b seperately
     a = cell(nRuns,1);
     b = cell(nRuns,1);
-    for iRun=1:nRuns
-        tmp = load(sprintf('%s%sPPI_R%i-rVisual*a.mat',dirs.PPI,filesep,iRun));
-        a{iRun} = tmp.PPI;
-        tmp = load(sprintf('%s%sPPI_R%i-rVisual*b.mat',dirs.PPI,filesep,iRun));
-        b{iRun} = tmp.PPI;
+    for iRun = 1:nRuns
+        regressor_A = load(...
+            sprintf('%s%sPPI_R%i-%s*a.mat',dirs.PPI,filesep,iRun,roiId));
+        a{iRun} = regressor_A.PPI;
+        regressor_B = load(...
+            sprintf('%s%sPPI_R%i-%s*b.mat',dirs.PPI,filesep,iRun,roiId));
+        b{iRun} = regressor_B.PPI;
     end
-    clear tmp;
     
-    %Estimate 1st level GLM on whole brain data, using PPI predictors
-    estimPPImodel(dirs,tr,epiMask,roiInfo,epiFns,rpFns,a,b)
+    % Estimate 1st level GLM on whole brain data, using PPI predictors
+    estimPPImodel(dirs,epiMask,roiId,epiFns,rpFns,a,b);
 
 end
 return
@@ -102,8 +116,11 @@ for iRun = 1:numel(runList)
 end
 return
 
-function [] = estimPPImodel(dirs,tr,epiMask,roiInfo,epiFns,rpFns,a,b)
-%% Job definition: Specify
+function [] = estimPPImodel(dirs,epiMask,roiId,epiFns,rpFns,a,b)
+
+tr = 2.2;
+
+% Job definition: Specify
 spmBatch{1}.spm.stats.fmri_spec.dir = {dirs.PPI};
 spmBatch{1}.spm.stats.fmri_spec.timing.units = 'scans';
 spmBatch{1}.spm.stats.fmri_spec.timing.RT = tr;
@@ -117,21 +134,33 @@ for iRun = 1:numel(rpFns)
         {}, 'orth', {});
     spmBatch{1}.spm.stats.fmri_spec.sess(iRun).multi = {''};
 
-    %Psychological
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(1).name = 'Psych-a';
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(1).val = a{iRun}.P;
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(2).name = 'Psych-b';
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(2).val = b{iRun}.P;
+    % Psychological
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(1).name = ...
+        'a';
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(1).val = ...
+        a{iRun}.P;
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(2).name = ...
+        'b';
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(2).val = ...
+        b{iRun}.P;
 
-    %Physiological
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(3).name = 'rVisual-BOLD';
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(3).val = a{iRun}.Y; %this is indentical for both
+    % Physiological
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(3).name = ...
+        roiId;
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(3).val = ...
+        a{iRun}.Y;
+    % We only take the Physiological regressor for a but it is indentical
+    % for both a and b.
 
-    %Interaction
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(4).name = 'PPI-interaction-a';
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(4).val = a{iRun}.ppi;
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(5).name = 'PPI-interaction-b';
-    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(5).val = b{iRun}.ppi;
+    % Interaction
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(4).name = ...
+        sprintf('a:%s',roiId);
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(4).val = ...
+        a{iRun}.ppi;
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(5).name = ...
+        sprintf('b:%s',roiId);
+    spmBatch{1}.spm.stats.fmri_spec.sess(iRun).regress(5).val = ...
+        b{iRun}.ppi;
 
     spmBatch{1}.spm.stats.fmri_spec.sess(iRun).multi_reg = rpFns(iRun);
     spmBatch{1}.spm.stats.fmri_spec.sess(iRun).hpf = 128;
@@ -152,44 +181,48 @@ spmBatch{1}.spm.stats.fmri_spec.mask = {epiMask};
 % AR(1)
 spmBatch{1}.spm.stats.fmri_spec.cvi = 'AR(1)';
 
+%% Estimate
 spmMatFn = [dirs.PPI,filesep,'SPM.mat'];
 spmBatch{2}.spm.stats.fmri_est.spmmat = {spmMatFn};
 spmBatch{2}.spm.stats.fmri_est.write_residuals = 0;
 spmBatch{2}.spm.stats.fmri_est.method.Classical = 1;
 
-% Make contrasts
-conNames = cell(7,1);
-%main effect of a
-conNames{1} = 'a';
-H.a = 1;
-%main effect of b
-conNames{2} = 'b';
-H.b = [0,1];
-%main effect of roi
-conNames{3} = roiInfo.id;
-H.Y = [0,0,1];
-%PPI interaction effect (a)
-conNames{4} = sprintf('a:%s',roiInfo.id);
-H.axY =  [0,0,0,1];
-%PPI interaction effect (b)
-conNames{5} = sprintf('b:%s',roiInfo.id);
-H.bxY =  [0,0,0,0,1];
-%'Main effect' of x:roi (where x is either a or b)
-conNames{6} = sprintf('a:%s + b:%s',roiInfo.id);
-H.axY_plus_bxY =  [0,0,0,1,1];
-%'Interaction' of interaction effects (diff between a:roi vs b:roi)
-conNames{7} = sprintf('a:%s - b:%s',roiInfo.id);
-H.axY_minus_bxY =  [0,0,0,1,-1];
-fields = fieldnames(H);
-
+%% Make contrasts
 spmBatch{3}.spm.stats.con.spmmat = {spmMatFn};
-for iH = 1:numel(conNames)
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.name = conNames{iH};
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.weights = H.(fields{iH});
-    spmBatch{3}.spm.stats.con.consess{iH}.tcon.sessrep = 'replsc';
-end
 spmBatch{3}.spm.stats.con.delete = 1;
 
+spmBatch{3}.spm.stats.con.consess{1}.tcon.name = 'a';
+spmBatch{3}.spm.stats.con.consess{1}.tcon.weights = 1;
+spmBatch{3}.spm.stats.con.consess{1}.tcon.sessrep = 'replsc';
+
+spmBatch{3}.spm.stats.con.consess{2}.tcon.name = 'b';
+spmBatch{3}.spm.stats.con.consess{2}.tcon.weights = [0,1];
+spmBatch{3}.spm.stats.con.consess{2}.tcon.sessrep = 'replsc';
+
+spmBatch{3}.spm.stats.con.consess{3}.tcon.name = roiId;
+spmBatch{3}.spm.stats.con.consess{3}.tcon.weights = [0,0,1];
+spmBatch{3}.spm.stats.con.consess{3}.tcon.sessrep = 'replsc';
+
+spmBatch{3}.spm.stats.con.consess{4}.tcon.name = sprintf('a:%s',roiId);
+spmBatch{3}.spm.stats.con.consess{4}.tcon.weights = [0,0,0,1,0];
+spmBatch{3}.spm.stats.con.consess{4}.tcon.sessrep = 'replsc';
+
+spmBatch{3}.spm.stats.con.consess{5}.tcon.name = sprintf('b:%s',roiId);
+spmBatch{3}.spm.stats.con.consess{5}.tcon.weights = [0,0,0,0,1];
+spmBatch{3}.spm.stats.con.consess{5}.tcon.sessrep = 'replsc';
+
+% The following contrast compute a mean
+spmBatch{3}.spm.stats.con.consess{6}.tcon.name = ...
+    sprintf('a:%s + b:%s',roiId,roiId);
+spmBatch{3}.spm.stats.con.consess{6}.tcon.weights = [0,0,0,0.5,0.5];
+spmBatch{3}.spm.stats.con.consess{6}.tcon.sessrep = 'replsc';
+
+spmBatch{3}.spm.stats.con.consess{7}.tcon.name = ...
+    sprintf('a:%s - b:%s',roiId,roiId);
+spmBatch{3}.spm.stats.con.consess{7}.tcon.weights = [0,0,0,1,-1];
+spmBatch{3}.spm.stats.con.consess{7}.tcon.sessrep = 'replsc';
+
+%% Run Job
 spm_jobman('initcfg');
 spm_jobman('run',spmBatch);
 return
