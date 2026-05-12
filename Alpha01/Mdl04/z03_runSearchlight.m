@@ -1,12 +1,10 @@
 function [] = z03_runSearchlight(G)
-wd = pwd;
-%Back up into Alpha01
-cd .. 
+
 % Get the list of subjectIds
 subjectIds = getSubjectIds(G);
 
 % Set the path to the /Data directory
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
+dirs.Data = fullfile('..','..','..','Data');
 
 % Loop through subjects
 for iSubject = 1:numel(subjectIds)
@@ -48,7 +46,7 @@ for iSubject = 1:numel(subjectIds)
 
     % Run the searchlight
     [Z,N] = searchlight3D(...
-        5,...         Radius  
+        5,...          Radius  
         @searchFun,... Function
         Mask,...       Mask
         Timgs,...      Data
@@ -62,8 +60,7 @@ for iSubject = 1:numel(subjectIds)
     spm_write_vol(Vp,Mp);
     spm_write_vol(Vc,N);
 end
-%return to Mdl04 folder
-cd(wd);
+
 return
 
 function [z] = searchFun(X)

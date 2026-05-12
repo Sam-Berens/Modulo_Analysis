@@ -1,4 +1,5 @@
 function [] = z09_testPnoncMdl4b()
+error('Is this needed now?');
 % Cd out
 wd = pwd;
 cd ..;

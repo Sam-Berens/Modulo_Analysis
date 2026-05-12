@@ -1,16 +1,13 @@
-function [] = z07_estimMdl4b(G)
+function [] = z07_estimGLM1(G)
 
-% Cd out
-wd = pwd;
-cd ..;
 %% Get a table that includes all subjectIds and performance stats
-InputTable = get_pNonc(G);
-InputTable.cpNonc = InputTable.pNonc - mean(InputTable.pNonc);
-nSubjects = size(InputTable,1);
-InputTable.fn_colocPos = cell(nSubjects,1);
+pNonc = get_pNonc(G);
+pNonc.cpNonc = pNonc.pNonc - mean(pNonc.pNonc);
+nSubjects = size(pNonc,1);
+pNonc.fnY = cell(nSubjects,1);
 
-%% Set the path to the /Data directory
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
+%% Set the path to the Data directory
+dirs.Data = fullfile('..','..','..','Data');
 
 %% Set the output path
 dirs.Output = [dirs.Data,...
@@ -18,15 +15,16 @@ dirs.Output = [dirs.Data,...
     filesep,G,...
     filesep,'Analysis',...
     filesep,'Alpha01',...
-    filesep,'Mdl04b'];
+    filesep,'Mdl04',...
+    filesep,'GLM1'];
 if ~exist(dirs.Output,'dir')
     mkdir(dirs.Output);
 end
 
 %% Get the input filenames
 for iSubject = 1:nSubjects
-    InputTable.fn_colocPos{iSubject} = [dirs.Data,...
-        filesep,char(InputTable.subjectId(iSubject)),...
+    pNonc.fnY{iSubject} = [dirs.Data,...
+        filesep,char(pNonc.subjectId(iSubject)),...
         filesep,'Analysis',...
         filesep,'Alpha01',...
         filesep,'Mdl04',...
@@ -40,13 +38,13 @@ SpmJob = [{},{}];
 % Output dir
 SpmJob{1}.spm.stats.factorial_design.dir = {dirs.Output};
 
-% Input fns
+% Target fns
 SpmJob{1}.spm.stats.factorial_design.des.mreg.scans = ...
-    InputTable.fn_colocPos;
+    pNonc.fnY;
 
 % Covariate vector
 SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.c = ...
-    InputTable.cpNonc;
+    pNonc.cpNonc;
 
 % Covariate name
 SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.cname = 'cpNonc';
@@ -76,9 +74,4 @@ SpmJob{2}.spm.stats.fmri_est.method.Classical = 1;
 spm_jobman('initcfg');
 spm_jobman('run',SpmJob);
 
-% Cd back in
-cd(wd);
-
 return
-
-

@@ -1,22 +1,22 @@
-function [] = z06_estimMdl4a(G)
-% Estimate second-level GLM for Mdl04.
+function [] = z06_estimGLM0(G)
+% Estimate Mdl04/GLM0.
 %
-%   z06_FullInteraction2ndLvlMdl(G) estimates second-level SPM model for
-%   Mdl04 across all subjects in the group defined by G.
+%   z06_estimGLM0(G) estimates a second-level SPM model (Mdl04/GLM0) for
+%   all subjects in the group defined by G.
 %
 %   Inputs:
 %     G  - Group identifier consumed by getSubjectIds(G).
 %
 %   Requirements / Assumptions:
 %     • Design matrix file exist at:
-%         */_Group/[G]/Alpha01/Mdl4/X.mat
+%         */_Group/[G]/Alpha01/Mdl4/GlM0/X.mat
 %
 %   Model details:
 %     • Formula: zTemplate ~ (1|SubjectId) + colocation + colocation:zPnonc
 %
 %   Outputs (per group):
 %     • SPM.mat and parameter estimate images (beta_*.nii) saved to:
-%         */_Group/[G]/Alpha01/Mdl4/
+%         */_Group/[G]/Alpha01/Mdl4/GlM0
 %   Notes:
 %     • Residual images are not written (write_residuals = 0).
 %     • No contrasts are specified here.
@@ -28,7 +28,7 @@ cd ..;
 %% Load the design mat
 dirs.Data = '../../Data' ;
 dirs.Group =  fullfile(dirs.Data,'_Group',G);
-dirs.Mdl4 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl04a_r5');
+dirs.Mdl4 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl04','GlM0');
 Rfn = fullfile(dirs.Mdl4,'X.mat');
 loadStrct = load(Rfn);
 names = loadStrct.names;

@@ -1,4 +1,5 @@
 function [] = z08_testInterceptMdl4b()
+error('Is this needed now?');
 % Cd out
 wd = pwd;
 cd ..;
