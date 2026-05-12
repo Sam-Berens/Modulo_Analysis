@@ -19,6 +19,6 @@ roiNames = {
     'rEnt';
     'lMPFC';
     'rMPFC';
-    'lVis';
-    'rVis'};
+    'lVentralVis';
+    'rVentralVis'};
 return

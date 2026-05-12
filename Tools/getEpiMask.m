@@ -2,7 +2,7 @@ function [epiMask] = getEpiMask(subjectId)
 if iscategorical(subjectId)
     subjectId = char(subjectId);
 end
-dirs.Data = ['..',filesep,'..',filesep,'Data'];
+dirs.Data = fullfile(fileparts(mfilename('fullpath')),'..','..','Data');
 dirs.Subject = [dirs.Data,filesep,subjectId];
 dirs.EPI = [dirs.Subject,filesep,'EPI'];
 epiMask.name = sprintf('%s%s_%s_epiMask00.nii',dirs.EPI,filesep,subjectId);
