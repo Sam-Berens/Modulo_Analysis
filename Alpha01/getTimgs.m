@@ -124,7 +124,7 @@ if maskGiven
 end
 
 %% Set directories
-dirs.Data    = ['..',filesep,'..',filesep,'Data'];
+dirs.Data    = fullfile(fileparts(mfilename('fullpath')),'..','..','Data');
 dirs.Subject = [dirs.Data,filesep,subjectId];
 dirs.Alpha01 = [dirs.Subject,filesep,'Analysis',filesep,'Alpha01'];
 
