@@ -2,7 +2,7 @@ function [] = z07_estimGLM1(G)
 
 %% Get a table that includes all subjectIds and performance stats
 pNonc = get_pNonc(G);
-pNonc.cpNonc = pNonc.pNonc - mean(pNonc.pNonc);
+pNonc.zpNonc = zscore(pNonc.pNonc);
 nSubjects = size(pNonc,1);
 pNonc.fnY = cell(nSubjects,1);
 
@@ -44,10 +44,10 @@ SpmJob{1}.spm.stats.factorial_design.des.mreg.scans = ...
 
 % Covariate vector
 SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.c = ...
-    pNonc.cpNonc;
+    pNonc.zpNonc;
 
 % Covariate name
-SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.cname = 'cpNonc';
+SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.cname = 'zpNonc';
 
 % Centering
 SpmJob{1}.spm.stats.factorial_design.des.mreg.mcov.iCC = 1;
