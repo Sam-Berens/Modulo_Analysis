@@ -1,4 +1,34 @@
 function [components] = qFunc0(M)
+%FITQ Fit the modular-distance q-model to three mean similarity values.
+%
+%   COMPONENTS = FITQ(RHO) fits the model:
+%
+%       rho_i = b0 + b1 * (1 - i/3)^q
+%
+%   to the three mean similarity values in RHO using constrained least
+%   squares. RHO must be a 3-element vector ordered as:
+%
+%       RHO(1) = mean similarity at modular distance 1.
+%       RHO(2) = mean similarity at modular distance 2.
+%       RHO(3) = mean similarity at modular distance 3.
+%
+%   COMPONENTS is a 1-by-4 vector:
+%
+%       COMPONENTS(1) = b0, model intercept.
+%       COMPONENTS(2) = b1, non-negative distance-related scaling term.
+%       COMPONENTS(3) = q, fitted non-linearity parameter.
+%       COMPONENTS(4) = SSE, sum of squared fitting error.
+%
+%   The optimisation constrains b1 >= 0 and 0 <= q <= 7. The intercept b0
+%   is unconstrained. The fitted q parameter describes non-linearities in
+%   the relationship between modular distance and representational
+%   similarity.
+%
+%   This helper is called by QFUNC0 and QFUNC1 and requires FMINCON from the
+%   Optimization Toolbox.
+%
+%   See also FMINCON, QFUNC0, QFUNC1.
+%
 
 % Set mean similarity selectors
 persistent S1 S2 S3;

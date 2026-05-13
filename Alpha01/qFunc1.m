@@ -1,4 +1,58 @@
 function [components] = qFunc1(M)
+%QFUNC1 Fit q-models separately for across- and within-position similarities.
+%
+%   COMPONENTS = QFUNC1(M) computes a correlation-based representational
+%   similarity matrix from the columns of M, averages similarities between
+%   stimulus pairs separated by modular distances 1, 2, and 3, and fits the
+%   non-linear distance-similarity model separately for:
+%
+%       colocation = -1: across-position comparisons.
+%       colocation = +1: within-position comparisons.
+%
+%   The fitted model is:
+%
+%       rho_i = b0 + b1 * (1 - i/3)^q
+%
+%   where i is the modular distance between sparks, rho_i is the mean neural
+%   similarity at that distance, b0 is an intercept, b1 is a non-negative
+%   distance-related scaling term, and q controls the non-linearity of the
+%   relationship between modular distance and representational similarity.
+%
+%   M must be an N-by-12 numeric matrix, where rows are features/voxels and
+%   columns are condition-wise activity patterns. Columns 1:6 and 7:12 are
+%   assumed to correspond to the same modular-value order, 0:5, in two
+%   serial or presentation positions.
+%
+%   Comparisons between conditions with the same modular value are excluded,
+%   so the fitted models are not driven by visual identity or self-similarity
+%   effects.
+%
+%   COMPONENTS is a 1-by-8 vector:
+%
+%       COMPONENTS(1) = b0 for colocation = -1, across-position comparisons.
+%       COMPONENTS(2) = b1 for colocation = -1, across-position comparisons.
+%       COMPONENTS(3) = q  for colocation = -1, across-position comparisons.
+%       COMPONENTS(4) = SSE for colocation = -1, across-position comparisons.
+%
+%       COMPONENTS(5) = b0 for colocation = +1, within-position comparisons.
+%       COMPONENTS(6) = b1 for colocation = +1, within-position comparisons.
+%       COMPONENTS(7) = q  for colocation = +1, within-position comparisons.
+%       COMPONENTS(8) = SSE for colocation = +1, within-position comparisons.
+%
+%   A fit is only attempted for a given colocation level when the mean
+%   similarities follow the strict structural ordering rho_1 > rho_2 > rho_3.
+%   If this ordering does not hold, the corresponding four output values are
+%   left as NaN.
+%
+%   Interpretation of q:
+%       q = 1 gives a linear distance-similarity relationship.
+%       q > 1 implies sharper similarity changes at smaller distances.
+%       q < 1 implies sharper similarity changes at larger distances.
+%
+%   The fitting step requires FMINCON from the Optimization Toolbox.
+%
+%   See also CORR, FMINCON.
+%
 
 % Set mean similarity selectors
 persistent S;
