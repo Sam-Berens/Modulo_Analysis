@@ -35,7 +35,7 @@ epiMask = getEpiMask(subjectId);
 yDepth = 2; %Y is going to have 2 outputs (1st for coloc=-1 2nd for coloc=+1)
 %% loop through searchlight centres to test produce epsilon term from precursor to mdl03
 r = 3; 
-Y = searchlight3D(3,@epsilonFunc0,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
+Y = searchlight3D(3,@epsilonFunc1,epiMask,tImgs,yDepth); %reminder N is the volume of each searchlight
 
 
 coLocM1 = Y(:,:,:,1);
