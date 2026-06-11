@@ -21,6 +21,10 @@ if ~exist(dirs.Output,'dir')
     mkdir(dirs.Output);
 end
 
+%% Get group mask
+maskFn = fullfile(dirs.Data,'_Group',G,'Structural','GrpEpiMask00',...
+    'G1_GrpEpiMask00.nii');
+
 %% Get the input filenames
 for iSubject = 1:nSubjects
     pNonc.fnY{iSubject} = [dirs.Data,...
@@ -59,16 +63,35 @@ SpmJob{1}.spm.stats.factorial_design.cov = ...
 SpmJob{1}.spm.stats.factorial_design.multi_cov = ...
     struct('files', {}, 'iCFI', {}, 'iCC', {});
 SpmJob{1}.spm.stats.factorial_design.masking.tm.tm_none = 1;
-SpmJob{1}.spm.stats.factorial_design.masking.im = 1;
-SpmJob{1}.spm.stats.factorial_design.masking.em = {''};
+SpmJob{1}.spm.stats.factorial_design.masking.im = 0; % No implicit mask
+SpmJob{1}.spm.stats.factorial_design.masking.em = {maskFn};
 SpmJob{1}.spm.stats.factorial_design.globalc.g_omit = 1;
 SpmJob{1}.spm.stats.factorial_design.globalm.gmsca.gmsca_no = 1;
 SpmJob{1}.spm.stats.factorial_design.globalm.glonorm = 1;
 
 % Estimation
-SpmJob{2}.spm.stats.fmri_est.spmmat = {[dirs.Output,filesep,'SPM.mat']};
+spmMatfn = [dirs.Output,filesep,'SPM.mat'];
+SpmJob{2}.spm.stats.fmri_est.spmmat = {spmMatfn};
 SpmJob{2}.spm.stats.fmri_est.write_residuals = 0;
 SpmJob{2}.spm.stats.fmri_est.method.Classical = 1;
+
+% Contrasts
+SpmJob{3}.spm.stats.con.spmmat(1) = {spmMatfn};
+
+conNames = cell(1,1);
+%intercept
+conNames{1} = 'intercept';
+H.intercept = 1;
+%main effect
+conNames{2} = 'zPnonc';
+H.zPnonc = [0,1];
+
+for iH = 1:numel(conNames)
+    SpmJob{3}.spm.stats.con.consess{iH}.tcon.name = conNames{iH};
+    SpmJob{3}.spm.stats.con.consess{iH}.tcon.weights = H.(conNames{iH});
+    SpmJob{3}.spm.stats.con.consess{iH}.tcon.sessrep = 'none';
+end
+SpmJob{3}.spm.stats.con.delete = 1;
 
 % Run th job
 spm_jobman('initcfg');
