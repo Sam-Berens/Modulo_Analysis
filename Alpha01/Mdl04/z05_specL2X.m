@@ -36,7 +36,7 @@ X.zPnonc = []; % Remove zPnonc as it is perfectly correlated with subject
 R = X{:,:};
 names = X.Properties.VariableNames;
 outputFn = fullfile(dirs.Output,'X.mat');
-if ~exist(fldr,"dir")
+if ~exist(dirs.Output,"dir")
     mkdir(dirs.Output);
 end
 save(outputFn,'R','names');

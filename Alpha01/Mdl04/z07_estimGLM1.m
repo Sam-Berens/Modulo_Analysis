@@ -21,6 +21,10 @@ if ~exist(dirs.Output,'dir')
     mkdir(dirs.Output);
 end
 
+%% Get group mask
+maskFn = fullfile(dirs.Data,'_Group',G,'Structural','GrpEpiMask00',...
+    'G1_GrpEpiMask00.nii');
+
 %% Get the input filenames
 for iSubject = 1:nSubjects
     pNonc.fnY{iSubject} = [dirs.Data,...
@@ -59,8 +63,8 @@ SpmJob{1}.spm.stats.factorial_design.cov = ...
 SpmJob{1}.spm.stats.factorial_design.multi_cov = ...
     struct('files', {}, 'iCFI', {}, 'iCC', {});
 SpmJob{1}.spm.stats.factorial_design.masking.tm.tm_none = 1;
-SpmJob{1}.spm.stats.factorial_design.masking.im = 1;
-SpmJob{1}.spm.stats.factorial_design.masking.em = {''};
+SpmJob{1}.spm.stats.factorial_design.masking.im = 0; % No implicit mask
+SpmJob{1}.spm.stats.factorial_design.masking.em = {maskFn};
 SpmJob{1}.spm.stats.factorial_design.globalc.g_omit = 1;
 SpmJob{1}.spm.stats.factorial_design.globalm.gmsca.gmsca_no = 1;
 SpmJob{1}.spm.stats.factorial_design.globalm.glonorm = 1;

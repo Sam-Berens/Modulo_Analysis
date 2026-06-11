@@ -28,8 +28,8 @@ dirs.Group =  fullfile(dirs.Data,'_Group',G);
 dirs.Mdl04 = fullfile(dirs.Group,'Analysis','Alpha01','Mdl04');
 dirs.GLM0 = fullfile(dirs.Mdl04,'GLM0');
 X = fullfile(dirs.GLM0,'X.mat');
-X = load(X);
-names = X.names;
+temp = load(X);
+names = temp.names;
 
 %% Get group mask
 maskFn = fullfile(dirs.Group, 'Structural','GrpEpiMask00',...
@@ -72,8 +72,8 @@ spmBatch{1}.spm.stats.factorial_design.multi_cov.iCFI = 1;
 spmBatch{1}.spm.stats.factorial_design.multi_cov.iCC = 5;
 spmBatch{1}.spm.stats.factorial_design.masking.tm.tm_none = 1;
 
-% Implicit masking
-spmBatch{1}.spm.stats.factorial_design.masking.im = 1;
+% No implicit masking
+spmBatch{1}.spm.stats.factorial_design.masking.im = 0;
 
 % Explicit masking with group EPI mask
 spmBatch{1}.spm.stats.factorial_design.masking.em = {maskFn};
